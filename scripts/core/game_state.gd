@@ -11,7 +11,7 @@ static func create(data: GameData) -> Dictionary:
     inventory["leaves"] = 4
     return {
         "schema_version": 4,
-        "version": "godot-0.3.2-mobile-ci",
+        "version": "godot-0.4.1-mobile",
         "year": 1,
         "month": 4,
         "money": 85000,
@@ -41,6 +41,6 @@ static func create(data: GameData) -> Dictionary:
         "tutorial_step": 0,
         "log": ["Farm Loop Godot移植版を開始。鶏舎から循環を始めよう。"],
         "analytics": {"session_actions":0,"events":[]},
-        "settings": {"haptics":true,"reduced_motion":false},
+        "settings": {"sound":true,"haptics":true,"reduced_motion":false},
         "ui": {"selected_facility":"coop","last_tab":"farm"}
     }
