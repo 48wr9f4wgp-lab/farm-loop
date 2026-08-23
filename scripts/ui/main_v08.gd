@@ -1,7 +1,6 @@
 extends "res://scripts/ui/main_v07.gd"
 
 const ProductMapOverlayV08Class = preload("res://scripts/ui/product_map_overlay_v08.gd")
-const ProductMapOverlayV07Class = preload("res://scripts/ui/product_map_overlay_v07.gd")
 
 func _ready() -> void:
     super._ready()
