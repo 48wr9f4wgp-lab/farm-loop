@@ -36,11 +36,12 @@ func _polish_mobile_shell() -> void:
     var scrolls := find_children("*","ScrollContainer",true,false)
     for node in scrolls:
         if node is ScrollContainer:
-            var bar := node.get_v_scroll_bar()
-            if bar != null:
-                bar.modulate.a = 0.0
-                bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-                bar.custom_minimum_size.x = 1.0
+            var scroll: ScrollContainer = node as ScrollContainer
+            var scroll_bar: VScrollBar = scroll.get_v_scroll_bar()
+            if scroll_bar != null:
+                scroll_bar.modulate.a = 0.0
+                scroll_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+                scroll_bar.custom_minimum_size.x = 1.0
 
 func _ensure_v03_fields() -> void:
     super._ensure_v03_fields()
