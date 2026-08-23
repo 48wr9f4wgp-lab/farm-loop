@@ -87,7 +87,9 @@ func explore_mountain(s: Dictionary) -> Dictionary:
     var key: String = products[rng.randi_range(0,products.size()-1)]
     var qty: int = rng.randi_range(2,4) if strong else 1
     if data.get_table("products").has(key):
-        _give(s,{key:qty})
+        var out: Dictionary = {}
+        out[key] = qty
+        _give(s,out)
     var prosperity: int = rng.randi_range(7,11) if strong else 2
     var growth: Dictionary = _add_prosperity(s,prosperity)
     s["xp"] += 3 if strong else 1
@@ -127,7 +129,7 @@ func register_loop_action(s: Dictionary, kind: String, facility: String = "") ->
     s["reputation"] += 1
     var growth: Dictionary = _add_prosperity(s,28)
     add_log(s,"循環チェイン完成！ ボーナス ¥%d" % bonus)
-    return {"advanced":true,"complete":true,"stage":6,"bonus":bonus,"rank_up":bool(growth["rank_up"]) }
+    return {"advanced":true,"complete":true,"stage":6,"bonus":bonus,"rank_up":bool(growth["rank_up"])}
 
 func next_month(s: Dictionary) -> Dictionary:
     ensure_entertainment_fields(s)
