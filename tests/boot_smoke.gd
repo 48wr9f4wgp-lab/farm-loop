@@ -9,7 +9,7 @@ func fail(message: String) -> void:
 func pass(message: String) -> void:
     print("PASS: ", message)
 
-func _initialize() -> void:
+func _init() -> void:
     var packed := load("res://main.tscn") as PackedScene
     if packed == null:
         fail("main.tscn load")
