@@ -10,7 +10,7 @@ func expect_true(value: bool, label: String) -> void:
         failures += 1; printerr("FAIL: ",label)
     else: print("PASS: ",label)
 
-func _initialize() -> void:
+func _init() -> void:
     var data = GameDataClass.new(); var rules = GameRulesClass.new(data); var s = GameStateClass.create(data)
     expect_true(rules.harvest(s,"coop")["ok"],"coop harvest")
     expect_true(s["inventory"]["manure"] >= 4,"manure created")
