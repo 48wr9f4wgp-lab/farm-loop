@@ -357,7 +357,7 @@ func _build_market() -> void:
         var p: Dictionary = data.get_table("products")[key]
         if bool(p.get("sellable",false)) and int(state["inventory"].get(key,0)) > 0:
             found = true
-            var price := rules.quote_price(state,key,selected_channel)
+            var price: int = int(rules.quote_price(state,key,selected_channel))
             items.add_child(_button("%s ×%d　@¥%d" % [p["name"],state["inventory"][key],price],_on_sell.bind(key),true))
     if not found:
         var empty := Label.new()
