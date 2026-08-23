@@ -1,5 +1,5 @@
 name: Farm Loop Mobile Web
-# smartphone-ci-observable
+# smartphone-ci-observable-v2
 
 on:
   push:
@@ -20,6 +20,7 @@ env:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,10 +60,10 @@ jobs:
         run: godot --headless --path . --editor --quit
 
       - name: Core loop tests
-        run: godot --headless --path . --script tests/test_game_rules.gd
+        run: timeout 30s godot --headless --path . --quit-after 2 --script tests/test_game_rules.gd
 
       - name: Boot and UI smoke tests
-        run: godot --headless --path . --script tests/boot_smoke.gd
+        run: timeout 30s godot --headless --path . --quit-after 120 --script tests/boot_smoke.gd
 
       - name: Export Web build
         run: |
