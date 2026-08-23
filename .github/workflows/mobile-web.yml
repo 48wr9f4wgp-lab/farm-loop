@@ -1,0 +1,66 @@
+name: Farm Loop Mobile Web
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: farm-loop-mobile-web
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.2"
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          use-dotnet: false
+          include-templates: true
+
+      - name: Verify Godot
+        run: godot --version
+
+      - name: Import resources
+        run: godot --headless --path . --import
+
+      - name: Parse main scene and scripts
+        run: godot --headless --path . --editor --quit
+
+      - name: Core loop tests
+        run: godot --headless --path . --script tests/test_game_rules.gd
+
+      - name: Boot and UI smoke tests
+        run: godot --headless --path . --script tests/boot_smoke.gd
+
+      - name: Export Web build
+        run: |
+          rm -rf build/web
+          mkdir -p build/web
+          godot --headless --path . --export-release "Web" build/web/index.html
+          test -s build/web/index.html
+          test -s build/web/index.wasm
+          test -s build/web/index.pck
+
+      - name: Web artifact manifest
+        run: |
+          python3 ci/build_manifest.py build/web > build/web/build_manifest.json
+          cat build/web/build_manifest.json
+
+      - name: Upload testable Web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: farm-loop-web
+          path: build/web
+          if-no-files-found: error
