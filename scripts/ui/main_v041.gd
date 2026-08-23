@@ -91,9 +91,9 @@ func _advance_tutorial(kind: String, facility: String) -> void:
         state["tutorial_step"] = 6
 
 func _on_next_month() -> void:
-    var old_season := rules.season_key(int(state["month"]))
+    var old_season: String = str(rules.season_key(int(state["month"])))
     var result: Dictionary = rules.next_month(state)
-    var new_season := rules.season_key(int(state["month"]))
+    var new_season: String = str(rules.season_key(int(state["month"])))
     _commit(result,"farm")
     if old_season != new_season and feedback != null:
         feedback.season_transition(rules.season_name(int(state["month"])))
