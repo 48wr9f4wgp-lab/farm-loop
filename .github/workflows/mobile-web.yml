@@ -1,5 +1,5 @@
 name: Farm Loop Mobile Web
-# smartphone-ci-pages-v5
+# smartphone-ci-pages-v5.1-jp-font
 
 on:
   push:
@@ -33,7 +33,7 @@ jobs:
           script: |
             const title = 'Farm Loop smartphone CI status';
             const body = [
-              'Farm Loop Godot v0.5 CI: **running**',
+              'Farm Loop Godot v0.5.1 CI: **running**',
               `Commit: ${context.sha}`,
               `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             ].join('\n');
@@ -44,6 +44,19 @@ jobs:
             } else {
               await github.rest.issues.create({owner: context.repo.owner, repo: context.repo.repo, title, body});
             }
+
+      - name: Build Japanese Web font
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/fonts
+          curl -L --fail --retry 3 --retry-delay 2 \
+            https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/SubsetOTF/JP/NotoSansJP-Regular.otf \
+            -o /tmp/NotoSansJP-Regular.otf
+          python3 -m pip install --quiet fonttools brotli
+          python3 ci/build_font_subset.py /tmp/NotoSansJP-Regular.otf assets/fonts/farmloop-jp.woff2 .
+          test -s assets/fonts/farmloop-jp.woff2
+          ls -lh assets/fonts/farmloop-jp.woff2
 
       - name: Setup Godot
         uses: chickensoft-games/setup-godot@v2
@@ -69,6 +82,9 @@ jobs:
             echo "Godot parse gate failed"
             exit 1
           fi
+
+      - name: Japanese font smoke test
+        run: timeout 30s godot --headless --path . --script tests/font_smoke.gd
 
       - name: Core loop tests
         run: timeout 30s godot --headless --path . --script tests/test_game_rules.gd
@@ -108,7 +124,7 @@ jobs:
             const title = 'Farm Loop smartphone CI status';
             const status = '${{ job.status }}';
             const body = [
-              `Farm Loop Godot v0.5 build: **${status}**`,
+              `Farm Loop Godot v0.5.1 build: **${status}**`,
               `Commit: ${context.sha}`,
               `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             ].join('\n');
@@ -156,7 +172,7 @@ jobs:
             const status = '${{ job.status }}';
             const pageUrl = '${{ steps.deployment.outputs.page_url }}';
             const body = [
-              `Farm Loop Godot v0.5 Web deploy: **${status}**`,
+              `Farm Loop Godot v0.5.1 Web deploy: **${status}**`,
               `Commit: ${context.sha}`,
               `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
               pageUrl ? `Safari preview: ${pageUrl}` : 'Safari preview: not deployed'
