@@ -34,7 +34,27 @@ func _load_json(path: String) -> Variant:
     if parsed == null:
         push_error("Farm Loop JSON invalid: %s" % path)
         return {}
-    return parsed
+    return _normalize_json(parsed)
+
+func _normalize_json(value: Variant) -> Variant:
+    match typeof(value):
+        TYPE_ARRAY:
+            var normalized_array: Array = []
+            for item in value:
+                normalized_array.append(_normalize_json(item))
+            return normalized_array
+        TYPE_DICTIONARY:
+            var normalized_dict: Dictionary = {}
+            for key in value:
+                normalized_dict[key] = _normalize_json(value[key])
+            return normalized_dict
+        TYPE_FLOAT:
+            var number: float = float(value)
+            if is_equal_approx(number, round(number)):
+                return int(number)
+            return number
+        _:
+            return value
 
 func get_table(name: String) -> Variant:
     return tables.get(name, {})
