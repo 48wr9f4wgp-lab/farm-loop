@@ -1,6 +1,7 @@
 extends "res://scripts/ui/main_v041.gd"
 
 const RulesV05Class = preload("res://scripts/core/game_rules_v05.gd")
+const GrowthOverlayClass = preload("res://scripts/ui/satoyama_growth_overlay.gd")
 
 func _ready() -> void:
     super._ready()
@@ -39,7 +40,7 @@ func _next_objective() -> String:
     if int(e.get("explores_this_month",0)) < 2:
         return "遊びの目標｜山を探索して、今月のレア発見を狙おう"
     var stage: int = int(e.get("chain_stage",0))
-    var labels := [
+    var labels: Array[String] = [
         "鶏舎で回収して循環チェイン開始",
         "堆肥舎で仕込み、チェインをつなぐ",
         "今月を終えて堆肥を完成させる",
@@ -55,8 +56,11 @@ func _build_farm() -> void:
         return
     rules.ensure_entertainment_fields(state)
     var progress: Dictionary = rules.land_progress(state)
-    if map != null and map.has_method("set_prosperity"):
-        map.set_prosperity(int(progress["rank"]))
+    if map != null:
+        var overlay = GrowthOverlayClass.new()
+        overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+        overlay.set_rank(int(progress["rank"]),bool(state["settings"].get("reduced_motion",false)))
+        map.add_child(overlay)
 
     var mountain := _section("山の探索")
     var summary := Label.new()
@@ -73,7 +77,7 @@ func _build_farm() -> void:
     bar.show_percentage = false
     bar.custom_minimum_size = Vector2(0,12)
     mountain.add_child(bar)
-    var explore_text := "山へ探索に行く"
+    var explore_text: String = "山へ探索に行く"
     if int(state["entertainment"]["explores_this_month"]) >= 2:
         explore_text = "もう一度探索（追加探索は控えめ報酬）"
     mountain.add_child(_button(explore_text,_on_explore,true))
@@ -116,7 +120,7 @@ func _commit(result: Dictionary, return_tab: String, facility: String = "") -> v
     if bool(chain.get("complete",false)):
         save_service.save(state)
         if feedback != null:
-            var extra := " + 里山ランクUP" if bool(chain.get("rank_up",false)) else ""
+            var extra: String = " + 里山ランクUP" if bool(chain.get("rank_up",false)) else ""
             feedback.pop("循環チェイン完成！ +¥%d%s" % [chain.get("bonus",0),extra],5)
             feedback.fly_tokens("major",10)
         if sfx != null:
