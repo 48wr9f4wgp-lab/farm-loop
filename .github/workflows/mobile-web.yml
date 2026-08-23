@@ -1,5 +1,5 @@
 name: Farm Loop Mobile Web
-# smartphone-ci-observable-v2
+# smartphone-ci-hard-gate-v3
 
 on:
   push:
@@ -53,17 +53,26 @@ jobs:
       - name: Verify Godot
         run: godot --version
 
-      - name: Import resources
-        run: godot --headless --path . --import
-
-      - name: Parse main scene and scripts
-        run: godot --headless --path . --editor --quit
+      - name: Import and validate scripts
+        shell: bash
+        run: |
+          set -o pipefail
+          godot --headless --path . --import 2>&1 | tee import.log
+          if grep -E "SCRIPT ERROR|Parse Error|Compile Error|Failed to load script" import.log; then
+            echo "Godot import reported script errors"
+            exit 1
+          fi
+          godot --headless --path . --editor --quit 2>&1 | tee parse.log
+          if grep -E "SCRIPT ERROR|Parse Error|Compile Error|Failed to load script" parse.log; then
+            echo "Godot parse gate failed"
+            exit 1
+          fi
 
       - name: Core loop tests
-        run: timeout 30s godot --headless --path . --quit-after 2 --script tests/test_game_rules.gd
+        run: timeout 30s godot --headless --path . --script tests/test_game_rules.gd
 
       - name: Boot and UI smoke tests
-        run: timeout 30s godot --headless --path . --quit-after 120 --script tests/boot_smoke.gd
+        run: timeout 30s godot --headless --path . --script tests/boot_smoke.gd
 
       - name: Export Web build
         run: |
