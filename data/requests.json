@@ -1,0 +1,10 @@
+[
+  {"id":"mio_eggs","villager":"mio","label":"朝市の卵","need":{"eggs":5},"reward":1800,"relation":3,"min_level":1},
+  {"id":"mio_spring","villager":"mio","label":"春の山菜小箱","need":{"taranome":2,"kogomi":2},"reward":3600,"relation":4,"min_level":1,"months":[4,5]},
+  {"id":"mio_udo","villager":"mio","label":"採れたてウド","need":{"udo":3},"reward":2600,"relation":3,"min_level":1,"months":[4,5]},
+  {"id":"takumi_shiitake","villager":"takumi","label":"原木の出来を確認","need":{"shiitake":3},"reward":3200,"relation":4,"min_level":1},
+  {"id":"takumi_rare","villager":"takumi","label":"林縁の春便り","need":{"koshi":1,"zenmai":1},"reward":4800,"relation":5,"min_level":2,"months":[4,5,6]},
+  {"id":"gen_dry","villager":"gen","label":"旅館用の乾燥シイタケ","need":{"dryShiitake":1},"reward":4200,"relation":4,"min_level":1},
+  {"id":"gen_honey","villager":"gen","label":"夏の百花蜜","need":{"honey":1},"reward":3800,"relation":4,"min_level":2,"months":[6,7,8,9]},
+  {"id":"gen_pack","villager":"gen","label":"春の山菜セット","need":{"sansaiPack":1},"reward":6200,"relation":6,"min_level":2,"months":[4,5,6]}
+]

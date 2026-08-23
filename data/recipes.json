@@ -1,0 +1,6 @@
+[
+  {"id":"smokedEgg","name":"燻製たまご","input":{"eggs":4},"output":{"smokedEgg":3},"cost":180,"level":1},
+  {"id":"dryShiitake","name":"乾燥シイタケ","input":{"shiitake":3},"output":{"dryShiitake":2},"cost":220,"level":1},
+  {"id":"sansaiPack","name":"春の山菜セット","input":{"taranome":1,"udo":1,"kogomi":1},"output":{"sansaiPack":1},"cost":160,"level":2},
+  {"id":"gift","name":"里山ギフト","input":{"honey":1,"dryShiitake":1,"smokedEgg":1},"output":{"gift":1},"cost":380,"level":3}
+]

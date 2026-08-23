@@ -1,0 +1,12 @@
+{
+  "taranome":{"name":"タラの芽","months":[4,5],"habitat":"日向・法面","unlock":1,"rarity":1},
+  "udo":{"name":"ウド","months":[4,5],"habitat":"日向の専用畑","unlock":1,"rarity":1},
+  "kogomi":{"name":"コゴミ","months":[4,5],"habitat":"湿地・沢沿い","unlock":1,"rarity":1},
+  "koshi":{"name":"コシアブラ","months":[4,5],"habitat":"明るい林縁","unlock":2,"rarity":3},
+  "zenmai":{"name":"ゼンマイ","months":[4,5,6],"habitat":"湿地縁","unlock":2,"rarity":2},
+  "warabi":{"name":"ワラビ","months":[5,6],"habitat":"隔離区画","unlock":2,"rarity":1},
+  "shidoke":{"name":"シドケ","months":[4,5],"habitat":"湿った林床","unlock":3,"rarity":3},
+  "aiko":{"name":"アイコ","months":[4,5],"habitat":"杉林腐葉土","unlock":3,"rarity":3},
+  "gyo":{"name":"行者にんにく","months":[4,5],"habitat":"林床","unlock":4,"rarity":4},
+  "sansho":{"name":"山椒","months":[6,7,8],"habitat":"林縁・日向寄り","unlock":2,"rarity":2}
+}

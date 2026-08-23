@@ -1,0 +1,7 @@
+[
+  {"id":"snowRoof","name":"耐雪屋根補強","cost":28000,"unlock":1},
+  {"id":"bearFence","name":"ソーラー電気柵","cost":36000,"unlock":2},
+  {"id":"bioGate","name":"防疫ゲート","cost":26000,"unlock":2},
+  {"id":"coldStorage","name":"小型冷蔵庫","cost":42000,"unlock":3},
+  {"id":"snowBee","name":"越冬蜂場設備","cost":45000,"unlock":3}
+]

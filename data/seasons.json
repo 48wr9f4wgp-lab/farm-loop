@@ -1,0 +1,6 @@
+{
+  "spring":{"name":"春","months":[3,4,5],"weather":["晴れ","晴れ","雨","曇り"]},
+  "summer":{"name":"夏","months":[6,7,8],"weather":["晴れ","晴れ","雨","雷雨"]},
+  "autumn":{"name":"秋","months":[9,10,11],"weather":["晴れ","曇り","雨","晴れ"]},
+  "winter":{"name":"冬","months":[12,1,2],"weather":["雪","雪","曇り","大雪"]}
+}

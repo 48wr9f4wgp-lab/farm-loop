@@ -1,0 +1,38 @@
+{
+  "coop": {
+    "name": "雪国鶏舎",
+    "start_level": 1,
+    "upgrade_base": 18000,
+    "zone": "home"
+  },
+  "compost": {
+    "name": "堆肥舎",
+    "start_level": 1,
+    "upgrade_base": 14000,
+    "zone": "home"
+  },
+  "sansai": {
+    "name": "山菜区画",
+    "start_level": 1,
+    "upgrade_base": 22000,
+    "zone": "field"
+  },
+  "mushroom": {
+    "name": "原木林",
+    "start_level": 1,
+    "upgrade_base": 26000,
+    "zone": "forest"
+  },
+  "bee": {
+    "name": "蜂場",
+    "start_level": 1,
+    "upgrade_base": 32000,
+    "zone": "edge"
+  },
+  "workshop": {
+    "name": "加工小屋",
+    "start_level": 1,
+    "upgrade_base": 24000,
+    "zone": "home"
+  }
+}
