@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: farm-loop-mobile-web
@@ -64,3 +65,40 @@ jobs:
           name: farm-loop-web
           path: build/web
           if-no-files-found: error
+
+      - name: Report CI status
+        if: always()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const title = 'Farm Loop smartphone CI status';
+            const status = '${{ job.status }}';
+            const body = [
+              `Farm Loop Godot v0.3.2 CI: **${status}**`,
+              `Commit: ${context.sha}`,
+              `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            ].join('\n');
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              per_page: 100
+            });
+            const existing = issues.find(i => i.title === title && !i.pull_request);
+            const state = status === 'success' ? 'closed' : 'open';
+            if (existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body,
+                state
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body
+              });
+            }
