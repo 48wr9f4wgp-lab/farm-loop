@@ -46,7 +46,7 @@ func _result(ok: bool, msg: String, tier: int = 1, feedback: String = "work") ->
     return {"ok":ok,"msg":msg,"tier":tier,"feedback":feedback}
 
 func check_level(s: Dictionary) -> bool:
-    var changed := false
+    var changed: bool = false
     for m in data.get_table("milestones"):
         if int(s["xp"]) >= int(m["xp"]) and int(s["level"]) < int(m["level"]):
             s["level"] = int(m["level"])
@@ -59,9 +59,9 @@ func check_level(s: Dictionary) -> bool:
 func harvest(s: Dictionary, facility: String) -> Dictionary:
     if facility != "compost" and not bool(s["ready"].get(facility, false)):
         return _result(false, "今月は回収済み")
-    var lv := int(s["facility_levels"].get(facility, 1))
+    var lv: int = int(s["facility_levels"].get(facility, 1))
     if facility == "coop":
-        var winter := season_key(int(s["month"])) == "winter"
+        var winter: bool = season_key(int(s["month"])) == "winter"
         var eggs: int = maxi(2, (4 + lv * 2) - (2 if winter else 0))
         _give(s, {"eggs":eggs,"manure":3+lv})
         s["ready"]["coop"] = false
@@ -83,12 +83,12 @@ func harvest(s: Dictionary, facility: String) -> Dictionary:
         if eligible.is_empty():
             return _result(false, "今月は山菜の主収穫期ではない")
         var slots: int = mini(eligible.size(), 2 + int((lv-1)/2.0))
-        var out := {}
-        var boost := int(s["buffs"]["field"]) + int(s["buffs"]["pollination"])
+        var out: Dictionary = {}
+        var boost: int = int(s["buffs"]["field"]) + int(s["buffs"]["pollination"])
         for i in range(slots):
             var key: String = eligible[i][0]
             var guide: Dictionary = eligible[i][1]
-            var rarity_penalty := 1 if int(guide["rarity"]) >= 3 else 0
+            var rarity_penalty: int = 1 if int(guide["rarity"]) >= 3 else 0
             out[key] = maxi(1, 1 + int(lv/2.0) + boost - rarity_penalty + (1 if i == 0 else 0))
         _give(s,out); s["buffs"]["field"] = 0; s["buffs"]["pollination"] = 0; s["ready"]["sansai"] = false
         s["xp"] += 7 + slots; s["counters"]["harvest"] += 1
@@ -96,11 +96,11 @@ func harvest(s: Dictionary, facility: String) -> Dictionary:
         check_level(s)
         return _result(true, "旬の山菜 %d種を収穫" % slots, 3 if slots >= 3 else 2, "collect")
     if facility == "mushroom":
-        var sh := 0; var na := 0; var hi := 0
-        var sk := season_key(int(s["month"]))
+        var sh: int = 0; var na: int = 0; var hi: int = 0
+        var sk: String = season_key(int(s["month"]))
         for batch in s["mushroom_batches"]:
             if int(batch["age"]) < 10 or int(batch["health"]) < 45: continue
-            var seasonal := 0.18
+            var seasonal: float = 0.18
             if batch["type"] == "shiitake": seasonal = 1.7 if sk == "autumn" else (0.8 if sk == "spring" else 0.25)
             elif batch["type"] == "nameko": seasonal = 1.9 if sk == "autumn" else 0.10
             elif batch["type"] == "hiratake": seasonal = 0.9 if sk == "summer" else (1.25 if sk == "autumn" else 0.18)
@@ -113,7 +113,7 @@ func harvest(s: Dictionary, facility: String) -> Dictionary:
         add_log(s,"原木林：シイタケ%d・なめこ%d・ヒラタケ%d収穫" % [sh,na,hi])
         return _result(true,"シイタケ +%d / なめこ +%d / ヒラタケ +%d" % [sh,na,hi],2,"collect")
     if facility == "bee":
-        var sk := season_key(int(s["month"]))
+        var sk: String = season_key(int(s["month"]))
         if sk not in ["summer","autumn"]: return _result(false,"採蜜期ではない。群の維持を優先")
         var q: int = maxi(1, int(floor(lv*(1.4 if sk == "summer" else 0.8))))
         _give(s,{"honey":q}); s["buffs"]["pollination"] = 1; s["ready"]["bee"] = false; s["xp"] += 8; s["loop_score"] = mini(100,int(s["loop_score"])+3); s["counters"]["harvest"] += 1
@@ -122,7 +122,7 @@ func harvest(s: Dictionary, facility: String) -> Dictionary:
     return _result(false,"未対応")
 
 func gather_leaves(s: Dictionary) -> Dictionary:
-    var q := 2 + int(s["facility_levels"]["compost"])
+    var q: int = 2 + int(s["facility_levels"]["compost"])
     s["inventory"]["leaves"] += q; s["xp"] += 1
     add_log(s,"林床・田んぼ周りから落ち葉/籾殻%d回収" % q)
     return _result(true,"資材 +%d" % q,2,"work")
@@ -148,10 +148,10 @@ func quote_price(s: Dictionary, product_id: String, channel_id: String) -> int:
     var p: Dictionary = data.get_table("products").get(product_id,{})
     var c: Dictionary = data.get_table("channels").get(channel_id,{})
     if p.is_empty() or c.is_empty(): return 0
-    var season_bonus := 1.22 if p.get("season","") == season_key(int(s["month"])) else 1.0
+    var season_bonus: float = 1.22 if p.get("season","") == season_key(int(s["month"])) else 1.0
     var quality: float = 0.94 + minf(0.18,float(s["reputation"])/300.0) + minf(0.10,float(s["loop_score"])/500.0)
     var noise: float = 0.96 + rng.randf()*0.08
-    var processed := 1.12 if p["category"] == "processed" and channel_id == "giftshop" else 1.0
+    var processed: float = 1.12 if p["category"] == "processed" and channel_id == "giftshop" else 1.0
     return maxi(1,int(round(float(p["base"])*float(c["price"])*season_bonus*quality*noise*processed)))
 
 func sell_all(s: Dictionary, product_id: String, channel_id: String) -> Dictionary:
@@ -159,7 +159,7 @@ func sell_all(s: Dictionary, product_id: String, channel_id: String) -> Dictiona
     var c: Dictionary = data.get_table("channels").get(channel_id,{})
     if p.is_empty() or not bool(p.get("sellable",false)): return _result(false,"販売対象外")
     if c.is_empty() or int(s["level"]) < int(c["unlock"]): return _result(false,"販路未解放")
-    var n := int(s["inventory"].get(product_id,0));
+    var n: int = int(s["inventory"].get(product_id,0))
     if n <= 0: return _result(false,"在庫なし")
     var net: int = maxi(0, quote_price(s,product_id,channel_id)*n-int(c["fee"]))
     s["inventory"][product_id] = 0; s["money"] += net; s["yearly_sales"] += net; s["lifetime_sales"] += net; s["reputation"] += int(c["rep"])+int(n/6.0); s["xp"] += maxi(2,int(net/900.0)); s["counters"]["sales"] += net
@@ -169,7 +169,7 @@ func sell_all(s: Dictionary, product_id: String, channel_id: String) -> Dictiona
 func upgrade_facility(s: Dictionary, facility_id: String) -> Dictionary:
     var f: Dictionary = data.get_table("facilities").get(facility_id,{})
     if f.is_empty(): return _result(false,"施設不明")
-    var lv := int(s["facility_levels"][facility_id]); var cost := int(round(float(f["upgrade_base"])*pow(1.55,lv-1)))
+    var lv: int = int(s["facility_levels"][facility_id]); var cost: int = int(round(float(f["upgrade_base"])*pow(1.55,lv-1)))
     if int(s["money"]) < cost: return _result(false,"資金不足")
     s["money"] -= cost; s["facility_levels"][facility_id] = lv+1; s["reputation"] += 2; s["xp"] += 10
     add_log(s,"%sをLv%dへ強化" % [f["name"],lv+1]); check_level(s)
@@ -187,7 +187,7 @@ func buy_project(s: Dictionary, project_id: String) -> Dictionary:
     return _result(false,"設備不明")
 
 func inoculate_logs(s: Dictionary, kind: String) -> Dictionary:
-    var specs := {"shiitake":[7500,20],"nameko":[5200,14],"hiratake":[4800,12]}
+    var specs: Dictionary = {"shiitake":[7500,20],"nameko":[5200,14],"hiratake":[4800,12]}
     if not specs.has(kind): return _result(false,"菌種不明")
     var cost: int = specs[kind][0]; var count: int = specs[kind][1]
     if int(s["money"]) < cost: return _result(false,"資金不足")
@@ -216,13 +216,13 @@ func fulfill_request(s: Dictionary, request_id: String) -> Dictionary:
         if r["id"] != request_id: continue
         if bool(r.get("done",false)): return _result(false,"この依頼は完了済み")
         if not _has(s,r["need"]): return _result(false,"必要な品が足りない")
-        var before := int(s["relation"][r["villager"]]); _take(s,r["need"]); r["done"] = true; s["money"] += int(r["reward"]); s["reputation"] += 1; s["xp"] += 7; s["relation"][r["villager"]] = before + int(r["relation"])
+        var before: int = int(s["relation"][r["villager"]]); _take(s,r["need"]); r["done"] = true; s["money"] += int(r["reward"]); s["reputation"] += 1; s["xp"] += 7; s["relation"][r["villager"]] = before + int(r["relation"])
         add_log(s,"村の依頼「%s」を納品 +¥%d" % [r["label"],r["reward"]]); check_level(s)
         return _result(true,"依頼達成 +¥%d" % r["reward"],4 if relation_tier(before)!=relation_tier(s["relation"][r["villager"]]) else 3,"mission")
     return _result(false,"依頼不明")
 
 func next_month(s: Dictionary) -> Dictionary:
-    var before_season := season_key(int(s["month"]))
+    var before_season: String = season_key(int(s["month"]))
     if int(s["compost_queue"]) > 0:
         s["inventory"]["compost"] += int(s["compost_queue"]); add_log(s,"発酵堆肥%d完成" % s["compost_queue"]); s["compost_queue"] = 0; s["loop_score"] = mini(100,int(s["loop_score"])+4)
     for b in s["mushroom_batches"]:
@@ -230,35 +230,35 @@ func next_month(s: Dictionary) -> Dictionary:
         if rng.randf() < 0.12: b["health"] = maxi(20,int(b["health"])-3)
     if not bool(s["projects"].get("coldStorage",false)):
         for key in ["eggs","taranome","udo","kogomi","sansho","nameko"]:
-            var n := int(s["inventory"].get(key,0)); var loss := int(floor(n*0.20))
+            var n: int = int(s["inventory"].get(key,0)); var loss: int = int(floor(n*0.20))
             if loss > 0: s["inventory"][key] -= loss; add_log(s,"%s%dが鮮度低下でロス" % [data.get_table("products")[key]["name"],loss])
-    var risk := _roll_risk(s)
+    var risk: Dictionary = _roll_risk(s)
     if risk.is_empty():
-        var bonus := 500 + int(s["loop_score"])*24; s["money"] += bonus; add_log(s,"循環運営ボーナス ¥%d" % bonus)
+        var bonus: int = 500 + int(s["loop_score"])*24; s["money"] += bonus; add_log(s,"循環運営ボーナス ¥%d" % bonus)
     else:
         s["money"] = maxi(0,int(s["money"])-int(risk["cost"])); add_log(s,"%s ¥%d" % [risk["text"],risk["cost"]])
     s["month"] += 1
     if s["month"] > 12: s["month"] = 1; s["year"] += 1; s["yearly_sales"] = 0; add_log(s,"新しい年が始まった")
-    var sk := season_key(int(s["month"])); var weather: Array = data.get_table("seasons")[sk]["weather"]; s["weather"] = weather[rng.randi_range(0,weather.size()-1)]
+    var sk: String = season_key(int(s["month"])); var weather: Array = data.get_table("seasons")[sk]["weather"]; s["weather"] = weather[rng.randi_range(0,weather.size()-1)]
     s["ready"] = {"coop":true,"sansai":true,"mushroom":true,"bee":true}; s["counters"] = {"harvest":0,"sales":0,"craft":0}; s["village_requests"] = []; ensure_requests(s); s["loop_score"] = maxi(0,int(s["loop_score"])-1)
     return _result(true,"%d年%d月・%sへ" % [s["year"],s["month"],season_name(s["month"])],5 if not risk.is_empty() else 3,"hazard" if not risk.is_empty() else "month")
 
 func _roll_risk(s: Dictionary) -> Dictionary:
-    var sk := season_key(int(s["month"])); var roll := rng.randf()
+    var sk: String = season_key(int(s["month"])); var roll: float = rng.randf()
     if sk == "winter" and roll < 0.24:
-        var severe := s["weather"] == "大雪"; var cost := 11000 if severe else 6500
+        var severe: bool = str(s["weather"]) == "大雪"; var cost: int = 11000 if severe else 6500
         if bool(s["projects"].get("snowRoof",false)): cost = int(cost*0.28)
         return {"type":"snow","cost":cost,"text":"大雪対応費" if severe else "積雪対応費"}
     if roll < 0.34:
-        var cost := 7200
+        var cost: int = 7200
         if bool(s["projects"].get("bearFence",false)): cost = int(cost*0.25)
         return {"type":"bear","cost":cost,"text":"熊対策・設備補修"}
     if sk in ["summer","autumn"] and roll < 0.43:
-        var cost := 4600
+        var cost: int = 4600
         if int(s["facility_levels"]["bee"]) >= 3: cost = int(cost*0.45)
         return {"type":"wasp","cost":cost,"text":"スズメバチ対策"}
     if roll < 0.50:
-        var cost := 5200
+        var cost: int = 5200
         if bool(s["projects"].get("bioGate",false)): cost = int(cost*0.30)
         return {"type":"bio","cost":cost,"text":"防疫強化費"}
     return {}
