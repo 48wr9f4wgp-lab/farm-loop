@@ -2,15 +2,45 @@ extends "res://scripts/ui/main_v041.gd"
 
 const RulesV05Class = preload("res://scripts/core/game_rules_v05.gd")
 const GrowthOverlayClass = preload("res://scripts/ui/satoyama_growth_overlay.gd")
+const UI_FONT_PATH := "res://assets/fonts/farmloop-jp.woff2"
 
 func _ready() -> void:
+    _install_ui_font()
     super._ready()
     rules = RulesV05Class.new(data)
     rules.ensure_entertainment_fields(state)
-    state["version"] = "godot-0.5-entertainment"
+    state["version"] = "godot-0.5.1-jp-font"
     save_service.save(state)
     _refresh_v05_shell()
+    _polish_mobile_shell()
     _show_tab(current_tab)
+
+func _install_ui_font() -> void:
+    if not ResourceLoader.exists(UI_FONT_PATH):
+        push_warning("Japanese UI font missing; fallback font will be used")
+        return
+    var font = load(UI_FONT_PATH)
+    if font == null or not (font is Font):
+        push_warning("Japanese UI font failed to load")
+        return
+    var ui_theme := Theme.new()
+    ui_theme.default_font = font
+    ui_theme.default_font_size = 14
+    theme = ui_theme
+
+func _polish_mobile_shell() -> void:
+    if status_label != null:
+        status_label.add_theme_font_size_override("font_size",13)
+    if objective_label != null:
+        objective_label.add_theme_font_size_override("font_size",13)
+    var scrolls := find_children("*","ScrollContainer",true,false)
+    for node in scrolls:
+        if node is ScrollContainer:
+            var bar := node.get_v_scroll_bar()
+            if bar != null:
+                bar.modulate.a = 0.0
+                bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+                bar.custom_minimum_size.x = 1.0
 
 func _ensure_v03_fields() -> void:
     super._ensure_v03_fields()
@@ -23,7 +53,7 @@ func _ensure_v03_fields() -> void:
             "chains_completed":0,
             "best_chain":0
         }
-    state["version"] = "godot-0.5-entertainment"
+    state["version"] = "godot-0.5.1-jp-font"
 
 func _refresh_v05_shell() -> void:
     if root_box != null and root_box.get_child_count() > 0:
@@ -31,7 +61,7 @@ func _refresh_v05_shell() -> void:
         if head is HBoxContainer and head.get_child_count() > 1:
             var tag = head.get_child(1)
             if tag is Label:
-                tag.text = "GODOT 0.5"
+                tag.text = "GODOT 0.5.1"
 
 func _next_objective() -> String:
     if int(state.get("tutorial_step",0)) < 6:
