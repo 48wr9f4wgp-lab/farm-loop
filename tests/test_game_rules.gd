@@ -21,7 +21,7 @@ func _initialize() -> void:
     expect_true(rules.apply_compost(s)["ok"],"compost applied")
     expect_true(rules.harvest(s,"sansai")["ok"],"sansai harvest")
     expect_true(s["inventory"]["taranome"] > 0,"taranome gained")
-    var before := s["money"]
+    var before: int = int(s["money"])
     expect_true(rules.sell_all(s,"taranome","roadside")["ok"],"sell taranome")
     expect_true(s["money"] > before,"money increases")
     print("TESTS COMPLETE failures=",failures)
