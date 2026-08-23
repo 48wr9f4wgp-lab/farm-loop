@@ -51,6 +51,8 @@ func _facility_action_label(id: String) -> String:
 
 func _build_farm() -> void:
     super._build_farm()
+    if not rules.has_method("land_progress"):
+        return
     if map != null:
         map.custom_minimum_size = Vector2(0,350)
         for child in map.get_children():
