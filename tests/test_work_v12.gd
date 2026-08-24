@@ -45,7 +45,7 @@ func _init() -> void:
         _ok(bool(result.get("ok",false)),"exploration has no energy dead-end %d" % i)
 
     var packed := load("res://main.tscn") as PackedScene
-    _ok(packed != null,"v1.2 main scene loads")
+    _ok(packed != null,"current main scene loads")
     if packed == null:
         quit(1)
         return
@@ -53,11 +53,17 @@ func _init() -> void:
     root.add_child(scene)
     await process_frame
     await process_frame
+
+    # Current FTUE intentionally hides route choice until its mountain beat.
+    var runtime_state: Dictionary = scene.get("state")
+    runtime_state["ftue_v2"]["step"] = 6
+    runtime_state["ftue_v2"]["active"] = true
+    runtime_state["ftue_v2"]["completed"] = false
     scene.call("_show_tab","work")
     await process_frame
     await process_frame
 
-    _ok(_has_text(scene,"今日の山道を選ぶ"),"work tab leads with route choice")
+    _ok(_has_text(scene,"今日の山道を選ぶ"),"mountain beat leads with route choice")
     _ok(_has_text(scene,"沢沿い"),"stream route visible")
     _ok(_has_text(scene,"ブナ林"),"beech route visible")
     _ok(_has_text(scene,"尾根"),"ridge route visible")
