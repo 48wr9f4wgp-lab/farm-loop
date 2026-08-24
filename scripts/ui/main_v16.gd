@@ -1,6 +1,6 @@
 extends "res://scripts/ui/main_v15.gd"
 
-const FacilityActionOverlayV16Class = preload("res://scripts/ui/facility_action_overlay_v16.gd")
+const FarmScreenClass = preload("res://scripts/ui/screens/farm_screen.gd")
 
 func _ready() -> void:
     super._ready()
@@ -24,10 +24,4 @@ func _show_tab(tab: String) -> void:
     tw.tween_property(content,"modulate:a",1.0,0.14)
 
 func _build_farm() -> void:
-    super._build_farm()
-    if map == null:
-        return
-    var action_fx = FacilityActionOverlayV16Class.new()
-    action_fx.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-    action_fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    map.add_child(action_fx)
+    FarmScreenClass.new().build(self)
