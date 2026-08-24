@@ -6,8 +6,18 @@ const BACKUP_PATH := "user://farm_loop_save.backup.json"
 const TEMP_PATH := "user://farm_loop_save.tmp.json"
 const SCHEMA_VERSION := 4
 
+func _canonical_payload_text(payload: Dictionary) -> String:
+    # JSON round-trip normalizes values the same way they will be represented
+    # after loading from disk (notably JSON numeric types), while sort_keys=true
+    # keeps dictionary ordering deterministic for checksum purposes.
+    var first_pass := JSON.stringify(payload, "", true, false)
+    var normalized: Variant = JSON.parse_string(first_pass)
+    if typeof(normalized) != TYPE_DICTIONARY:
+        return first_pass
+    return JSON.stringify(normalized, "", true, false)
+
 func _hash(payload: Dictionary) -> String:
-    var text := JSON.stringify(payload)
+    var text := _canonical_payload_text(payload)
     var h: int = 2166136261
     for byte in text.to_utf8_buffer():
         h = int((h ^ int(byte)) * 16777619) & 0xffffffff
@@ -55,7 +65,7 @@ func save(payload: Dictionary) -> bool:
     var tmp := FileAccess.open(TEMP_PATH, FileAccess.WRITE)
     if tmp == null:
         return false
-    tmp.store_string(JSON.stringify(env))
+    tmp.store_string(JSON.stringify(env, "", true, false))
     tmp.close()
     var verify := _read_envelope(TEMP_PATH)
     if verify.is_empty():
