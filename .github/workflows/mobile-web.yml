@@ -1,5 +1,5 @@
 name: Farm Loop Mobile Web
-# smartphone-ci-pages-v14-village-product
+# smartphone-ci-pages-v15-farm-final
 
 on:
   push:
@@ -33,7 +33,7 @@ jobs:
           script: |
             const title = 'Farm Loop smartphone CI status';
             const body = [
-              'Farm Loop Godot v1.4 CI: **running**',
+              'Farm Loop Godot v1.5 CI: **running**',
               `Commit: ${context.sha}`,
               `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             ].join('\n');
@@ -56,7 +56,6 @@ jobs:
           python3 -m pip install --quiet fonttools brotli
           python3 ci/build_font_subset.py /tmp/NotoSansJP-Regular.otf assets/fonts/farmloop-jp.woff2 .
           test -s assets/fonts/farmloop-jp.woff2
-          ls -lh assets/fonts/farmloop-jp.woff2
 
       - name: Setup Godot
         uses: chickensoft-games/setup-godot@v2
@@ -73,52 +72,36 @@ jobs:
         run: |
           set -o pipefail
           godot --headless --path . --import 2>&1 | tee import.log
-          if grep -E "SCRIPT ERROR|Parse Error|Compile Error|Failed to load script" import.log; then
-            echo "Godot import reported script errors"
-            exit 1
-          fi
+          if grep -E "SCRIPT ERROR|Parse Error|Compile Error|Failed to load script" import.log; then exit 1; fi
           godot --headless --path . --editor --quit 2>&1 | tee parse.log
-          if grep -E "SCRIPT ERROR|Parse Error|Compile Error|Failed to load script" parse.log; then
-            echo "Godot parse gate failed"
-            exit 1
-          fi
+          if grep -E "SCRIPT ERROR|Parse Error|Compile Error|Failed to load script" parse.log; then exit 1; fi
 
       - name: Japanese font smoke test
         run: timeout 30s godot --headless --path . --script tests/font_smoke.gd
-
       - name: Core loop tests
         run: timeout 30s godot --headless --path . --script tests/test_game_rules.gd
-
       - name: Entertainment v0.5 tests
         run: timeout 30s godot --headless --path . --script tests/test_entertainment_v05.gd
-
       - name: Productization v0.6 tests
         run: timeout 30s godot --headless --path . --script tests/test_product_v06.gd
-
       - name: Product interaction v0.7 tests
         run: timeout 30s godot --headless --path . --script tests/test_product_ui_v07.gd
-
       - name: Art asset v0.8 tests
         run: timeout 30s godot --headless --path . --script tests/test_art_v08.gd
-
       - name: Product UI v0.9 tests
         run: timeout 30s godot --headless --path . --script tests/test_product_ui_v09.gd
-
       - name: Product UI v1.0 tests
         run: timeout 30s godot --headless --path . --script tests/test_product_ui_v10.gd
-
       - name: iPhone PWA v1.0.1 tests
         run: timeout 30s godot --headless --path . --script tests/test_pwa_v101.gd
-
       - name: Work adventure v1.2 tests
         run: timeout 30s godot --headless --path . --script tests/test_work_v12.gd
-
       - name: Market product v1.3 tests
         run: timeout 30s godot --headless --path . --script tests/test_market_v13.gd
-
       - name: Village product v1.4 tests
         run: timeout 30s godot --headless --path . --script tests/test_village_v14.gd
-
+      - name: Farm final v1.5 tests
+        run: timeout 30s godot --headless --path . --script tests/test_farm_v15.gd
       - name: Boot and UI smoke tests
         run: timeout 30s godot --headless --path . --script tests/boot_smoke.gd
 
@@ -132,9 +115,7 @@ jobs:
           test -s build/web/index.pck
 
       - name: Web artifact manifest
-        run: |
-          python3 ci/build_manifest.py build/web > build/web/build_manifest.json
-          cat build/web/build_manifest.json
+        run: python3 ci/build_manifest.py build/web > build/web/build_manifest.json
 
       - name: Upload testable Web artifact
         uses: actions/upload-artifact@v4
@@ -150,19 +131,12 @@ jobs:
           script: |
             const title = 'Farm Loop smartphone CI status';
             const status = '${{ job.status }}';
-            const body = [
-              `Farm Loop Godot v1.4 build: **${status}**`,
-              `Commit: ${context.sha}`,
-              `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
-            ].join('\n');
+            const body = [`Farm Loop Godot v1.5 build: **${status}**`,`Commit: ${context.sha}`,`Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`].join('\n');
             const { data: issues } = await github.rest.issues.listForRepo({owner: context.repo.owner, repo: context.repo.repo, state: 'all', per_page: 100});
             const existing = issues.find(i => i.title === title && !i.pull_request);
             const state = status === 'success' ? 'closed' : 'open';
-            if (existing) {
-              await github.rest.issues.update({owner: context.repo.owner, repo: context.repo.repo, issue_number: existing.number, body, state});
-            } else {
-              await github.rest.issues.create({owner: context.repo.owner, repo: context.repo.repo, title, body});
-            }
+            if (existing) await github.rest.issues.update({owner: context.repo.owner, repo: context.repo.repo, issue_number: existing.number, body, state});
+            else await github.rest.issues.create({owner: context.repo.owner, repo: context.repo.repo, title, body});
 
   deploy-pages:
     needs: build-test
@@ -177,19 +151,15 @@ jobs:
         with:
           name: farm-loop-web
           path: build/web
-
       - name: Configure Pages
         uses: actions/configure-pages@v5
-
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: build/web
-
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
       - name: Report Pages status
         if: always()
         uses: actions/github-script@v8
@@ -198,17 +168,9 @@ jobs:
             const title = 'Farm Loop smartphone CI status';
             const status = '${{ job.status }}';
             const pageUrl = '${{ steps.deployment.outputs.page_url }}';
-            const body = [
-              `Farm Loop Godot v1.4 Web deploy: **${status}**`,
-              `Commit: ${context.sha}`,
-              `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-              pageUrl ? `Safari preview: ${pageUrl}` : 'Safari preview: not deployed'
-            ].join('\n');
+            const body = [`Farm Loop Godot v1.5 Web deploy: **${status}**`,`Commit: ${context.sha}`,`Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,pageUrl ? `Safari preview: ${pageUrl}` : 'Safari preview: not deployed'].join('\n');
             const { data: issues } = await github.rest.issues.listForRepo({owner: context.repo.owner, repo: context.repo.repo, state: 'all', per_page: 100});
             const existing = issues.find(i => i.title === title && !i.pull_request);
             const state = status === 'success' ? 'closed' : 'open';
-            if (existing) {
-              await github.rest.issues.update({owner: context.repo.owner, repo: context.repo.repo, issue_number: existing.number, body, state});
-            } else {
-              await github.rest.issues.create({owner: context.repo.owner, repo: context.repo.repo, title, body});
-            }
+            if (existing) await github.rest.issues.update({owner: context.repo.owner, repo: context.repo.repo, issue_number: existing.number, body, state});
+            else await github.rest.issues.create({owner: context.repo.owner, repo: context.repo.repo, title, body});
