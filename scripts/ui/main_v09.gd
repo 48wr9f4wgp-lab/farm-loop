@@ -3,11 +3,31 @@ extends "res://scripts/ui/main_v08.gd"
 const FarmMapV09Class = preload("res://scripts/ui/farm_map_v09.gd")
 const ProductMapOverlayV09Class = preload("res://scripts/ui/product_map_overlay_v09.gd")
 
+var _v09_boot_guard: bool = true
+
 func _ready() -> void:
+    _v09_boot_guard = true
     super._ready()
+    _v09_boot_guard = false
     state["version"] = "godot-0.9-product-wave3"
     save_service.save(state)
     _show_tab(current_tab)
+
+func _show_tab(tab: String) -> void:
+    if _v09_boot_guard:
+        return
+    super._show_tab(tab)
+
+func _clear() -> void:
+    map = null
+    selected_title_label = null
+    selected_desc_label = null
+    selected_action_button = null
+    if content == null:
+        return
+    for child in content.get_children():
+        content.remove_child(child)
+        child.queue_free()
 
 func _build_shell() -> void:
     super._build_shell()
@@ -21,6 +41,22 @@ func _build_shell() -> void:
                     subtitle.text = "YUKISATO  •  FARM LOOP"
                     subtitle.add_theme_font_size_override("font_size",8)
 
+func _contains_exact_label(root_node: Node, target: String) -> bool:
+    if root_node is Label and str(root_node.text) == target:
+        return true
+    for child in root_node.get_children():
+        if _contains_exact_label(child,target):
+            return true
+    return false
+
+func _remove_legacy_location_panels(quick_panel: Control) -> void:
+    for child in content.get_children().duplicate():
+        if child == quick_panel:
+            continue
+        if _contains_exact_label(child,"今いる場所"):
+            content.remove_child(child)
+            child.queue_free()
+
 func _build_farm() -> void:
     super._build_farm()
     if map == null:
@@ -32,10 +68,7 @@ func _build_farm() -> void:
         if box.get_parent() is PanelContainer:
             quick_panel = box.get_parent()
 
-    var legacy_panel: Control = _find_section_panel("今いる場所")
-    if legacy_panel != null and legacy_panel != quick_panel and legacy_panel.get_parent() == content:
-        content.remove_child(legacy_panel)
-        legacy_panel.queue_free()
+    _remove_legacy_location_panels(quick_panel)
 
     var old_map: Control = map
     var old_index: int = old_map.get_index()
