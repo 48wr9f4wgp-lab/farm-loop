@@ -82,7 +82,10 @@ func migrate(raw: Dictionary, defaults: Dictionary) -> Dictionary:
     if version < 4:
         out["analytics"] = raw.get("analytics", {"session_actions":0})
     out["schema_version"] = SCHEMA_VERSION
-    out["version"] = "godot-0.3.2-mobile-ci"
+    # Preserve the release metadata that actually produced the save. The active
+    # application layer may stamp its current release after a successful boot,
+    # but migration itself must never invent an unrelated historical version.
+    out["version"] = str(raw.get("version", defaults.get("version", "unknown")))
     return out
 
 func _merge_recursive(target: Dictionary, source: Dictionary) -> void:
