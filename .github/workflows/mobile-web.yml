@@ -1,5 +1,5 @@
 name: Farm Loop Mobile Web
-# smartphone-ci-pages-v101-pwa-polish
+# smartphone-ci-pages-v12-route-adventure
 
 on:
   push:
@@ -33,7 +33,7 @@ jobs:
           script: |
             const title = 'Farm Loop smartphone CI status';
             const body = [
-              'Farm Loop Godot v1.0.1 CI: **running**',
+              'Farm Loop Godot v1.2 CI: **running**',
               `Commit: ${context.sha}`,
               `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             ].join('\n');
@@ -110,6 +110,9 @@ jobs:
       - name: iPhone PWA v1.0.1 tests
         run: timeout 30s godot --headless --path . --script tests/test_pwa_v101.gd
 
+      - name: Work adventure v1.2 tests
+        run: timeout 30s godot --headless --path . --script tests/test_work_v12.gd
+
       - name: Boot and UI smoke tests
         run: timeout 30s godot --headless --path . --script tests/boot_smoke.gd
 
@@ -142,7 +145,7 @@ jobs:
             const title = 'Farm Loop smartphone CI status';
             const status = '${{ job.status }}';
             const body = [
-              `Farm Loop Godot v1.0.1 build: **${status}**`,
+              `Farm Loop Godot v1.2 build: **${status}**`,
               `Commit: ${context.sha}`,
               `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             ].join('\n');
@@ -190,7 +193,7 @@ jobs:
             const status = '${{ job.status }}';
             const pageUrl = '${{ steps.deployment.outputs.page_url }}';
             const body = [
-              `Farm Loop Godot v1.0.1 Web deploy: **${status}**`,
+              `Farm Loop Godot v1.2 Web deploy: **${status}**`,
               `Commit: ${context.sha}`,
               `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
               pageUrl ? `Safari preview: ${pageUrl}` : 'Safari preview: not deployed'
