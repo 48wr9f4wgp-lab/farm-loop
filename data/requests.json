@@ -1,5 +1,5 @@
 [
-  {"id":"mio_eggs","villager":"mio","label":"朝市の卵","need":{"eggs":5},"reward":1800,"relation":3,"min_level":1},
+  {"id":"mio_eggs","villager":"mio","label":"朝市の卵（雪国鶏舎で回収）","need":{"eggs":5},"reward":1800,"relation":3,"min_level":1},
   {"id":"mio_spring","villager":"mio","label":"春の山菜小箱","need":{"taranome":2,"kogomi":2},"reward":3600,"relation":4,"min_level":1,"months":[4,5]},
   {"id":"mio_udo","villager":"mio","label":"採れたてウド","need":{"udo":3},"reward":2600,"relation":3,"min_level":1,"months":[4,5]},
   {"id":"takumi_shiitake","villager":"takumi","label":"原木の出来を確認","need":{"shiitake":3},"reward":3200,"relation":4,"min_level":1},
