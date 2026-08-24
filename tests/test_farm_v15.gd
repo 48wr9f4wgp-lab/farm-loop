@@ -9,18 +9,17 @@ func _ok(condition: bool, message: String) -> void:
         failures += 1
         printerr("FAIL: ",message)
 
-func _find_script(root_node: Node, suffix: String) -> Node:
-    if root_node.get_script() != null and str(root_node.get_script().resource_path).ends_with(suffix):
-        return root_node
+func _visual_layers_ignore_input(root_node: Node) -> bool:
     for child in root_node.get_children():
-        var found := _find_script(child,suffix)
-        if found != null:
-            return found
-    return null
+        if child is Control and child.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+            return false
+        if not _visual_layers_ignore_input(child):
+            return false
+    return true
 
 func _init() -> void:
     var packed := load("res://main.tscn") as PackedScene
-    _ok(packed != null,"v1.5 main scene loads")
+    _ok(packed != null,"current main scene loads")
     if packed == null:
         quit(1)
         return
@@ -36,14 +35,17 @@ func _init() -> void:
     _ok(map_value is Control,"farm map exists")
     if map_value is Control:
         _ok(map_value.custom_minimum_size.y >= 385.0,"farm hero keeps minimum visual height")
-        var polish := _find_script(map_value,"farm_polish_overlay_v15.gd")
-        _ok(polish != null,"farm guidance polish overlay is attached")
-        if polish is Control:
-            _ok(polish.mouse_filter == Control.MOUSE_FILTER_IGNORE,"farm polish never steals touch input")
+        _ok(_visual_layers_ignore_input(map_value),"farm visual layers never steal touch input")
+        if map_value.has_method("play_action_feedback"):
+            map_value.call("play_action_feedback","coop")
+            _ok(str(map_value.get("action_facility")) == "coop","farm action feedback targets selected facility")
+            _ok(float(map_value.get("action_timer")) > 0.0,"farm action feedback starts immediately")
+        else:
+            _ok(false,"farm exposes action feedback behavior")
 
     var action = scene.get("selected_action_button")
     _ok(action is Button and action.custom_minimum_size.y >= 50.0,"farm CTA remains thumb-sized")
 
-    print("V1.5 FARM FINAL TESTS COMPLETE failures=",failures)
+    print("FARM PRODUCT CONTRACT TESTS COMPLETE failures=",failures)
     scene.queue_free()
     quit(1 if failures > 0 else 0)
