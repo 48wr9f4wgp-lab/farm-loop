@@ -17,11 +17,21 @@ func build(host) -> void:
     host.rules.ensure_entertainment_fields(host.state)
     _build_quick_action(host)
     _build_map(host)
-    _build_notebook(host)
-    _build_mountain(host)
-    _build_chain(host)
-    _build_circulation(host)
-    _build_stock(host)
+
+    var guided: bool = host.ftue_service != null and host.ftue_service.active(host.state)
+    var guided_step: int = host.ftue_service.step(host.state) if guided else -1
+
+    # During proof-of-fun FTUE, keep the farm visual and the one action that
+    # matters. Management summaries return after the guided loop is complete.
+    if guided:
+        if guided_step == 3:
+            _build_circulation(host)
+    else:
+        _build_notebook(host)
+        _build_mountain(host)
+        _build_chain(host)
+        _build_circulation(host)
+        _build_stock(host)
     host._refresh_selected_panel()
 
 func _build_quick_action(host) -> void:
