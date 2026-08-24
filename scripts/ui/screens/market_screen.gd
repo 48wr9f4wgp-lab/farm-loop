@@ -18,7 +18,7 @@ func build(host) -> void:
     var best_name: String = str(channels[best_id]["name"])
     var selected_name: String = str(channels[host.selected_channel]["name"])
 
-    var hero := host._section("今日の出荷")
+    var hero: VBoxContainer = host._section("今日の出荷")
     var hero_top := HBoxContainer.new()
     hero_top.add_theme_constant_override("separation",8)
     hero.add_child(hero_top)
@@ -55,7 +55,7 @@ func build(host) -> void:
     summary.add_theme_color_override("font_color",MUTED)
     hero.add_child(summary)
 
-    var sell_all := host._button("%sへまとめて出荷" % selected_name,Callable(host,"_on_sell_basket"),true,false)
+    var sell_all: Button = host._button("%sへまとめて出荷" % selected_name,Callable(host,"_on_sell_basket"),true,false)
     sell_all.custom_minimum_size.y = 58
     sell_all.disabled = total_items <= 0
     hero.add_child(sell_all)
@@ -63,7 +63,7 @@ func build(host) -> void:
     if total_items <= 0:
         hero.add_child(host._lead_text("収穫かごは空。農場か山で恵みを集めると、ここに売上予想が出る。"))
 
-    var channels_section := host._section("売り先を選ぶ")
+    var channels_section: VBoxContainer = host._section("売り先を選ぶ")
     channels_section.add_child(host._lead_text("価格倍率と手数料の差で、同じ収穫でも手取りが変わる。"))
     for key in channels:
         var channel: Dictionary = channels[key]
@@ -71,14 +71,14 @@ func build(host) -> void:
             continue
         var p: Dictionary = host.rules.basket_preview(host.state,key)
         var star: String = "　★おすすめ" if key == best_id else ""
-        var label_text := "%s　×%.2f｜手数料¥%d｜約¥%d%s" % [
+        var label_text: String = "%s　×%.2f｜手数料¥%d｜約¥%d%s" % [
             str(channel["name"]),float(channel["price"]),int(channel["fee"]),int(p.get("net",0)),star
         ]
-        var b := host._button(label_text,Callable(host,"_on_channel").bind(key),key == host.selected_channel,false)
+        var b: Button = host._button(label_text,Callable(host,"_on_channel").bind(key),key == host.selected_channel,false)
         b.custom_minimum_size.y = 52
         channels_section.add_child(b)
 
-    var basket := host._section("収穫かご")
+    var basket: VBoxContainer = host._section("収穫かご")
     var found: bool = false
     for key in host.data.get_table("products"):
         var product: Dictionary = host.data.get_table("products")[key]
@@ -87,7 +87,7 @@ func build(host) -> void:
             continue
         found = true
         var item_value: int = host.rules.preview_price(host.state,key,host.selected_channel) * count
-        var item_button := host._button("%s ×%d　約¥%d" % [str(product["name"]),count,item_value],Callable(host,"_on_sell").bind(key),false,true)
+        var item_button: Button = host._button("%s ×%d　約¥%d" % [str(product["name"]),count,item_value],Callable(host,"_on_sell").bind(key),false,true)
         item_button.custom_minimum_size.y = 46
         basket.add_child(item_button)
     if not found:
