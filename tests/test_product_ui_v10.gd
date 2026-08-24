@@ -64,8 +64,9 @@ func _init() -> void:
 
     scene.call("_show_tab","village")
     await process_frame
-    _ok(_has_text(scene,"村のお願い"),"village requests lead the tab")
+    _ok(_has_text(scene,"今日の村"),"village daily hero leads the tab")
+    _ok(_has_text(scene,"納品"),"village keeps delivery interaction")
 
-    print("V1.3 PRODUCT UI TESTS COMPLETE failures=",failures)
+    print("V1.4 PRODUCT UI TESTS COMPLETE failures=",failures)
     scene.queue_free()
     quit(1 if failures > 0 else 0)
