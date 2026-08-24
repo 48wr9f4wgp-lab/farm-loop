@@ -13,6 +13,43 @@ func build(host) -> void:
     var last_route: String = str(entertainment.get("last_route",""))
     var last_find: String = str(entertainment.get("last_find",""))
 
+    var guided: bool = host.ftue_service != null and host.ftue_service.active(host.state)
+    var guided_step: int = host.ftue_service.step(host.state) if guided else -1
+    var show_routes: bool = not guided or guided_step >= 6
+
+    if show_routes:
+        _build_routes(host,strong_left,rank_info,last_route,last_find)
+
+    _build_field(host,guided)
+
+    # Recipes/upgrades/projects are valid systems, but exposing all of them in
+    # minute one makes the product read like a management dashboard. They return
+    # immediately after the proof-of-fun loop is complete.
+    if guided:
+        return
+
+    var recipes: VBoxContainer = host._section("加工小屋")
+    recipes.add_child(host._lead_text("収穫物を商品へ。加工するほど販売の一発が大きくなる。"))
+    for recipe in host.data.get_table("recipes"):
+        var craft_button: Button = host._button("%s　¥%d" % [str(recipe["name"]),int(recipe["cost"])],Callable(host,"_on_craft").bind(str(recipe["id"])),false,true)
+        recipes.add_child(craft_button)
+
+    var growth: VBoxContainer = host._section("里の成長")
+    growth.add_child(host._lead_text("よく使う場所から強化して、次の収穫を伸ばす。"))
+    for key in host.data.get_table("facilities"):
+        var facility: Dictionary = host.data.get_table("facilities")[key]
+        var upgrade_button: Button = host._button("%s　Lv%d → 強化" % [str(facility["name"]),int(host.state["facility_levels"][key])],Callable(host,"_on_upgrade").bind(key),false,true)
+        growth.add_child(upgrade_button)
+
+    var safety: VBoxContainer = host._section("里山整備")
+    for project in host.data.get_table("projects"):
+        var installed: bool = bool(host.state["projects"].get(project["id"],false))
+        var suffix: String = "　導入済" if installed else "　¥%d" % int(project["cost"])
+        var project_button: Button = host._button("%s%s" % [str(project["name"]),suffix],Callable(host,"_on_buy_project").bind(str(project["id"])),false,true)
+        project_button.disabled = installed
+        safety.add_child(project_button)
+
+func _build_routes(host, strong_left: int, rank_info: Dictionary, last_route: String, last_find: String) -> void:
     var explore: VBoxContainer = host._section("山へ入る")
     var headline := Label.new()
     headline.text = "今日の山道を選ぶ"
@@ -38,10 +75,14 @@ func build(host) -> void:
     recent.add_theme_color_override("font_color",MUTED)
     explore.add_child(recent)
 
+func _build_field(host, guided: bool) -> void:
     var field: VBoxContainer = host._section("山仕事")
     field.add_child(host._lead_text("拾った恵みを農場へ戻す。ここから循環が強くなる。"))
     var gather: Button = host._button("落ち葉・籾殻を集める",Callable(host,"_on_gather_leaves"),true,false)
     field.add_child(gather)
+
+    if guided:
+        return
 
     var logs_title := Label.new()
     logs_title.text = "原木を仕込む"
@@ -57,27 +98,6 @@ func build(host) -> void:
         b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         b.custom_minimum_size.y = 46
         logs.add_child(b)
-
-    var recipes: VBoxContainer = host._section("加工小屋")
-    recipes.add_child(host._lead_text("収穫物を商品へ。加工するほど販売の一発が大きくなる。"))
-    for recipe in host.data.get_table("recipes"):
-        var craft_button: Button = host._button("%s　¥%d" % [str(recipe["name"]),int(recipe["cost"])],Callable(host,"_on_craft").bind(str(recipe["id"])),false,true)
-        recipes.add_child(craft_button)
-
-    var growth: VBoxContainer = host._section("里の成長")
-    growth.add_child(host._lead_text("よく使う場所から強化して、次の収穫を伸ばす。"))
-    for key in host.data.get_table("facilities"):
-        var facility: Dictionary = host.data.get_table("facilities")[key]
-        var upgrade_button: Button = host._button("%s　Lv%d → 強化" % [str(facility["name"]),int(host.state["facility_levels"][key])],Callable(host,"_on_upgrade").bind(key),false,true)
-        growth.add_child(upgrade_button)
-
-    var safety: VBoxContainer = host._section("里山整備")
-    for project in host.data.get_table("projects"):
-        var installed: bool = bool(host.state["projects"].get(project["id"],false))
-        var suffix: String = "　導入済" if installed else "　¥%d" % int(project["cost"])
-        var project_button: Button = host._button("%s%s" % [str(project["name"]),suffix],Callable(host,"_on_buy_project").bind(str(project["id"])),false,true)
-        project_button.disabled = installed
-        safety.add_child(project_button)
 
 func _route_button(host, route_id: String, label_text: String, selected: bool) -> Button:
     var button: Button = host._button(label_text,Callable(host,"_on_route_explore").bind(route_id),selected,false)
