@@ -21,13 +21,13 @@ func _has_text(root_node: Node, target: String) -> bool:
 
 func _init() -> void:
     var packed := load("res://main.tscn") as PackedScene
-    _ok(packed != null,"v1.0 main scene loads")
+    _ok(packed != null,"v1.x main scene loads")
     if packed == null:
         quit(1)
         return
 
     var scene = packed.instantiate()
-    _ok(scene != null,"v1.0 main scene instantiates")
+    _ok(scene != null,"v1.x main scene instantiates")
     if scene == null:
         quit(1)
         return
@@ -52,7 +52,9 @@ func _init() -> void:
 
     scene.call("_show_tab","work")
     await process_frame
-    _ok(_has_text(scene,"今日の山仕事"),"work tab has product hero")
+    _ok(_has_text(scene,"山へ入る"),"work tab leads with mountain exploration")
+    _ok(_has_text(scene,"山を探索する"),"work tab has primary exploration CTA")
+    _ok(_has_text(scene,"今日の山仕事"),"work tab keeps productive follow-up actions")
 
     scene.call("_show_tab","market")
     await process_frame
@@ -63,6 +65,6 @@ func _init() -> void:
     await process_frame
     _ok(_has_text(scene,"村のお願い"),"village requests lead the tab")
 
-    print("V1.0 PRODUCT UI TESTS COMPLETE failures=",failures)
+    print("V1.1 PRODUCT UI TESTS COMPLETE failures=",failures)
     scene.queue_free()
     quit(1 if failures > 0 else 0)
