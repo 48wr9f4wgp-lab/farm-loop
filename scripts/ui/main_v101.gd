@@ -17,7 +17,7 @@ func _build_farm() -> void:
         selected_action_button.custom_minimum_size.y = 50
     if map != null:
         var h: float = get_viewport_rect().size.y
-        map.custom_minimum_size.y = clampf(h * 0.44,370.0,420.0)
+        map.custom_minimum_size.y = clampf(h * 0.44,385.0,420.0)
 
 func _daily_row(label_text: String, value: int, target: int) -> HBoxContainer:
     var row := HBoxContainer.new()
