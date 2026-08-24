@@ -1,9 +1,6 @@
 class_name MarketScreen
 extends RefCounted
 
-# B4 staged screen extraction. Presentation is moved out of the version chain,
-# while the existing host still owns shared shell/style helpers and callbacks.
-
 const GREEN_DARK := Color("#234c36")
 const MUTED := Color("#6d786f")
 
@@ -13,6 +10,10 @@ func build(host) -> void:
     var channels: Dictionary = host.data.get_table("channels")
     if not channels.has(host.selected_channel) or int(host.state["level"]) < int(channels[host.selected_channel].get("unlock",999)):
         host.selected_channel = best_id
+
+    var guided: bool = host.ftue_service != null and host.ftue_service.active(host.state)
+    var guided_step: int = host.ftue_service.step(host.state) if guided else -1
+    var sale_unlocked: bool = not guided or guided_step >= 8
 
     var preview: Dictionary = host.rules.basket_preview(host.state,host.selected_channel)
     var best_name: String = str(channels[best_id]["name"])
@@ -57,10 +58,12 @@ func build(host) -> void:
 
     var sell_all: Button = host._button("%sへまとめて出荷" % selected_name,Callable(host,"_on_sell_basket"),true,false)
     sell_all.custom_minimum_size.y = 58
-    sell_all.disabled = total_items <= 0
+    sell_all.disabled = total_items <= 0 or not sale_unlocked
     hero.add_child(sell_all)
 
-    if total_items <= 0:
+    if guided and not sale_unlocked:
+        hero.add_child(host._lead_text("最初の循環をつなぐまでは売上を確認するだけ。素材を先に売って詰むことはない。"))
+    elif total_items <= 0:
         hero.add_child(host._lead_text("収穫かごは空。農場か山で恵みを集めると、ここに売上予想が出る。"))
 
     var channels_section: VBoxContainer = host._section("売り先を選ぶ")
@@ -89,6 +92,9 @@ func build(host) -> void:
         var item_value: int = host.rules.preview_price(host.state,key,host.selected_channel) * count
         var item_button: Button = host._button("%s ×%d　約¥%d" % [str(product["name"]),count,item_value],Callable(host,"_on_sell").bind(key),false,true)
         item_button.custom_minimum_size.y = 46
+        # Guided session deliberately ends on one satisfying basket sale rather
+        # than letting one-by-one sales erase the payoff or consume key items.
+        item_button.disabled = guided
         basket.add_child(item_button)
     if not found:
         basket.add_child(host._lead_text("まだ出荷できる品はない。"))
