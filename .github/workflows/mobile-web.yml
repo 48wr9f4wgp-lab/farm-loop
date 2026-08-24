@@ -1,5 +1,5 @@
 name: Farm Loop Mobile Web
-# smartphone-ci-pages-v16-polish-b2-save-contract
+# smartphone-ci-pages-v16-polish-b3-rules-equivalence
 
 on:
   push:
@@ -67,6 +67,8 @@ jobs:
         run: timeout 30s godot --headless --path . --script tests/test_game_rules.gd
       - name: Save and migration B2 contract
         run: timeout 30s godot --headless --path . --script tests/test_save_contract_b2.gd
+      - name: Domain consolidation B3 equivalence
+        run: timeout 30s godot --headless --path . --script tests/test_rules_current_b3.gd
       - name: Entertainment v0.5 tests
         run: timeout 30s godot --headless --path . --script tests/test_entertainment_v05.gd
       - name: Productization v0.6 tests
