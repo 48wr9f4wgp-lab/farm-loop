@@ -60,12 +60,12 @@ func _init() -> void:
     scene.call("_show_tab","market")
     await process_frame
     _ok(_has_text(scene,"今日の出荷"),"market tab has product hero")
-    _ok(_has_text(scene,"まとめて出荷する"),"market has primary batch sell CTA")
+    _ok(_has_text(scene,"まとめて出荷"),"market has primary batch sell CTA")
 
     scene.call("_show_tab","village")
     await process_frame
     _ok(_has_text(scene,"村のお願い"),"village requests lead the tab")
 
-    print("V1.2 PRODUCT UI TESTS COMPLETE failures=",failures)
+    print("V1.3 PRODUCT UI TESTS COMPLETE failures=",failures)
     scene.queue_free()
     quit(1 if failures > 0 else 0)
