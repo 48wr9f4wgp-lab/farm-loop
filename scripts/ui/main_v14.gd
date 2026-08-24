@@ -1,10 +1,10 @@
 extends "res://scripts/ui/main_v13.gd"
 
-const RulesV14Class = preload("res://scripts/core/game_rules_v14.gd")
+const CurrentRulesClass = preload("res://scripts/core/game_rules_current.gd")
 
 func _ready() -> void:
     super._ready()
-    rules = RulesV14Class.new(data)
+    rules = CurrentRulesClass.new(data)
     rules.ensure_route_fields(state)
     rules.ensure_requests(state)
     state["version"] = "godot-1.4-village-product"
