@@ -13,7 +13,10 @@ func _cleanup() -> void:
     for path in [
         "user://farm_loop_save.json",
         "user://farm_loop_save.backup.json",
-        "user://farm_loop_save.tmp.json"
+        "user://farm_loop_save.tmp.json",
+        "user://farm_loop_ftue_test_save.json",
+        "user://farm_loop_ftue_test_save.backup.json",
+        "user://farm_loop_ftue_test_save.tmp.json"
     ]:
         if FileAccess.file_exists(path):
             DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
@@ -47,6 +50,13 @@ func _init() -> void:
     var second := first.duplicate(true)
     second["money"] = 54321
     _ok(service.save(second), "second save succeeds and creates backup")
+
+    var test_service := SaveService.new("ftue_test")
+    var test_state := defaults.duplicate(true)
+    test_state["money"] = 777
+    _ok(test_service.save(test_state), "isolated FTUE test slot saves")
+    _ok(int(test_service.load_or_default(defaults).get("money",0)) == 777, "FTUE test slot round-trips independently")
+    _ok(int(service.load_or_default(defaults).get("money",0)) == 54321, "FTUE test slot never overwrites main save")
 
     var corrupt := FileAccess.open("user://farm_loop_save.json", FileAccess.WRITE)
     _ok(corrupt != null, "primary save can be opened for corruption fixture")
