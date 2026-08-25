@@ -21,13 +21,13 @@ func _has_text(root_node: Node, target: String) -> bool:
 
 func _init() -> void:
     var packed := load("res://main.tscn") as PackedScene
-    _ok(packed != null,"v1.x main scene loads")
+    _ok(packed != null,"current main scene loads")
     if packed == null:
         quit(1)
         return
 
     var scene = packed.instantiate()
-    _ok(scene != null,"v1.x main scene instantiates")
+    _ok(scene != null,"current main scene instantiates")
     if scene == null:
         quit(1)
         return
@@ -50,12 +50,22 @@ func _init() -> void:
     var desc = scene.get("selected_desc_label")
     _ok(desc != null and not desc.visible,"facility paragraph hidden from first screen")
 
+    # Vertical Slice 2 intentionally keeps the early work tab focused on the
+    # material beat, then reveals the three mountain routes at FTUE step 6.
     scene.call("_show_tab","work")
     await process_frame
-    _ok(_has_text(scene,"山へ入る"),"work tab leads with mountain exploration")
-    _ok(_has_text(scene,"今日の山道を選ぶ"),"work tab presents route choice")
-    _ok(_has_text(scene,"沢沿い") and _has_text(scene,"ブナ林") and _has_text(scene,"尾根"),"work tab exposes three meaningful routes")
-    _ok(_has_text(scene,"山仕事"),"work tab keeps productive follow-up actions")
+    _ok(_has_text(scene,"山仕事"),"early work tab keeps productive material action")
+    _ok(not _has_text(scene,"今日の山道を選ぶ"),"mountain route choice stays hidden before its FTUE beat")
+
+    var runtime_state: Dictionary = scene.get("state")
+    runtime_state["ftue_v2"]["step"] = 6
+    runtime_state["ftue_v2"]["active"] = true
+    runtime_state["ftue_v2"]["completed"] = false
+    scene.call("_show_tab","work")
+    await process_frame
+    _ok(_has_text(scene,"山へ入る"),"mountain beat leads with exploration")
+    _ok(_has_text(scene,"今日の山道を選ぶ"),"mountain beat presents route choice")
+    _ok(_has_text(scene,"沢沿い") and _has_text(scene,"ブナ林") and _has_text(scene,"尾根"),"mountain beat exposes three meaningful routes")
 
     scene.call("_show_tab","market")
     await process_frame
@@ -67,6 +77,6 @@ func _init() -> void:
     _ok(_has_text(scene,"今日の村"),"village daily hero leads the tab")
     _ok(_has_text(scene,"納品"),"village keeps delivery interaction")
 
-    print("V1.4 PRODUCT UI TESTS COMPLETE failures=",failures)
+    print("CURRENT PRODUCT UI CONTRACT COMPLETE failures=",failures)
     scene.queue_free()
     quit(1 if failures > 0 else 0)
