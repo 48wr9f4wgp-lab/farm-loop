@@ -1,5 +1,5 @@
 name: Farm Loop Mobile Web
-# smartphone-ci-pages-b5-current-runtime
+# smartphone-ci-pages-vertical-slice-2-ftue
 
 on:
   push:
@@ -71,6 +71,8 @@ jobs:
         run: timeout 30s godot --headless --path . --script tests/test_rules_current_b3.gd
       - name: Current runtime B5 contract
         run: timeout 30s godot --headless --path . --script tests/test_runtime_b5.gd
+      - name: Vertical Slice FTUE v2 contract
+        run: timeout 30s godot --headless --path . --script tests/test_ftue_v2.gd
       - name: Entertainment v0.5 tests
         run: timeout 30s godot --headless --path . --script tests/test_entertainment_v05.gd
       - name: Productization v0.6 tests
