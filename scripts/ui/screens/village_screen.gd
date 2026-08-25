@@ -7,49 +7,24 @@ const INK := Color("#193126")
 const MUTED := Color("#6d786f")
 
 func build(host) -> void:
-    if host.state["village_requests"].is_empty():
+    var guided: bool = host.ftue_service != null and host.ftue_service.active(host.state)
+    var guided_step: int = host.ftue_service.step(host.state) if guided else -1
+
+    if guided and guided_step != 7:
+        _build_guided_redirect(host,guided_step)
+        return
+
+    if guided_step == 7 and host.ftue_service != null:
+        host.ftue_service.ensure_starter_request(host.state)
+    elif host.state["village_requests"].is_empty():
         host.rules.ensure_requests(host.state)
 
-    var open_count: int = 0
-    for request in host.state["village_requests"]:
-        if not bool(request.get("done",false)):
-            open_count += 1
-    var ready_count: int = host.rules.ready_request_count(host.state)
+    _build_request_hero(host,guided)
 
-    var hero: VBoxContainer = host._section("今日の村")
-    var headline := HBoxContainer.new()
-    headline.add_theme_constant_override("separation",8)
-    hero.add_child(headline)
-
-    var left := VBoxContainer.new()
-    left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    left.add_theme_constant_override("separation",1)
-    headline.add_child(left)
-
-    var title := Label.new()
-    title.text = "届けると、人とのつながりが育つ"
-    title.add_theme_font_size_override("font_size",16)
-    title.add_theme_color_override("font_color",GREEN_DARK)
-    left.add_child(title)
-
-    var sub := Label.new()
-    sub.text = "依頼 %d件｜今すぐ納品 %d件" % [open_count,ready_count]
-    sub.add_theme_font_size_override("font_size",11)
-    sub.add_theme_color_override("font_color",MUTED)
-    left.add_child(sub)
-
-    var ready_chip := Label.new()
-    ready_chip.text = "納品OK %d" % ready_count
-    ready_chip.add_theme_font_size_override("font_size",10)
-    ready_chip.add_theme_color_override("font_color",GREEN_DARK if ready_count > 0 else MUTED)
-    ready_chip.add_theme_stylebox_override("normal",host._chip_style(Color("#e3efd9") if ready_count > 0 else Color("#edf0ea")))
-    headline.add_child(ready_chip)
-
-    if host.state["village_requests"].is_empty():
-        hero.add_child(host._lead_text("今月のお願いはまだない。月が進むと新しい依頼が届く。"))
-    else:
-        for request in host.state["village_requests"]:
-            hero.add_child(_request_card(host,request))
+    # The proof-of-fun village beat only needs to answer one question:
+    # "Who am I growing this for?" Relationship management returns afterwards.
+    if guided:
+        return
 
     var people: VBoxContainer = host._section("雪里の人々")
     people.add_child(host._lead_text("依頼を届けるほど関係が深まり、雪里の住人になっていく。"))
@@ -89,6 +64,82 @@ func build(host) -> void:
     if host.state["settings"].has("sound"):
         var sound: Button = host._button("効果音 %s" % ("ON" if bool(host.state["settings"].get("sound",true)) else "OFF"),Callable(host,"_toggle_sound"),false,true)
         settings.add_child(sound)
+
+    _build_dev_test(host)
+
+func _build_guided_redirect(host, guided_step: int) -> void:
+    var guide: VBoxContainer = host._section("いまの手順")
+    guide.add_child(host._lead_text(host.ftue_service.objective(host.state)))
+    var target_tab: String = "farm"
+    var label_text: String = "農場へ戻る"
+    if guided_step in [1,6]:
+        target_tab = "work"
+        label_text = "仕事へ行く"
+    elif guided_step >= 8:
+        target_tab = "market"
+        label_text = "販売へ行く"
+    var go: Button = host._button(label_text,Callable(host,"_show_tab").bind(target_tab),true,false)
+    go.custom_minimum_size.y = 54
+    guide.add_child(go)
+
+func _build_request_hero(host, guided: bool) -> void:
+    var open_count: int = 0
+    for request in host.state["village_requests"]:
+        if not bool(request.get("done",false)):
+            open_count += 1
+    var ready_count: int = host.rules.ready_request_count(host.state)
+
+    var hero: VBoxContainer = host._section("今日の村")
+    var headline := HBoxContainer.new()
+    headline.add_theme_constant_override("separation",8)
+    hero.add_child(headline)
+
+    var left := VBoxContainer.new()
+    left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    left.add_theme_constant_override("separation",1)
+    headline.add_child(left)
+
+    var title := Label.new()
+    title.text = "届けると、人とのつながりが育つ"
+    title.add_theme_font_size_override("font_size",16)
+    title.add_theme_color_override("font_color",GREEN_DARK)
+    left.add_child(title)
+
+    var sub := Label.new()
+    sub.text = "依頼 %d件｜今すぐ納品 %d件" % [open_count,ready_count]
+    sub.add_theme_font_size_override("font_size",11)
+    sub.add_theme_color_override("font_color",MUTED)
+    left.add_child(sub)
+
+    var ready_chip := Label.new()
+    ready_chip.text = "納品OK %d" % ready_count
+    ready_chip.add_theme_font_size_override("font_size",10)
+    ready_chip.add_theme_color_override("font_color",GREEN_DARK if ready_count > 0 else MUTED)
+    ready_chip.add_theme_stylebox_override("normal",host._chip_style(Color("#e3efd9") if ready_count > 0 else Color("#edf0ea")))
+    headline.add_child(ready_chip)
+
+    if guided:
+        hero.add_child(host._lead_text("ここでは納品しなくてOK。誰が何を欲しがるかを見るだけで、次の販売へ進める。"))
+
+    if host.state["village_requests"].is_empty():
+        hero.add_child(host._lead_text("今月のお願いはまだない。月が進むと新しい依頼が届く。"))
+    else:
+        for request in host.state["village_requests"]:
+            hero.add_child(_request_card(host,request))
+
+func _build_dev_test(host) -> void:
+    var dev: VBoxContainer = host._section("開発テスト")
+    if str(host.runtime_slot) == "ftue_test":
+        dev.add_child(host._lead_text("いまは通常セーブと完全に分離した初回体験テスト枠。"))
+        var restart: Button = host._button("初回体験を最初からやり直す",Callable(host,"_on_start_ftue_test"),false,false)
+        dev.add_child(restart)
+        var back: Button = host._button("通常セーブへ戻る",Callable(host,"_on_return_main_save"),true,false)
+        dev.add_child(back)
+    else:
+        dev.add_child(host._lead_text("通常セーブを残したまま、初回15分だけ新規状態で試せる。テスト枠の進行は別ファイルに保存される。"))
+        var start: Button = host._button("初回体験を最初から試す",Callable(host,"_on_start_ftue_test"),true,false)
+        start.custom_minimum_size.y = 54
+        dev.add_child(start)
 
 func _request_card(host, request: Dictionary) -> PanelContainer:
     var card := PanelContainer.new()
@@ -156,6 +207,16 @@ func _request_card(host, request: Dictionary) -> PanelContainer:
     need.add_theme_font_size_override("font_size",11)
     need.add_theme_color_override("font_color",INK)
     box.add_child(need)
+
+    if host.ftue_service != null:
+        var hint_text: String = host.ftue_service.request_hint(request)
+        if not hint_text.is_empty():
+            var hint := Label.new()
+            hint.text = hint_text
+            hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+            hint.add_theme_font_size_override("font_size",10)
+            hint.add_theme_color_override("font_color",GREEN_DARK)
+            box.add_child(hint)
 
     if not bool(status["ready"]) and not bool(status["done"]) and not str(status["missing"]).is_empty():
         var missing := Label.new()
