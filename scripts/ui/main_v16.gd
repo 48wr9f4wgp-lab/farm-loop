@@ -25,6 +25,9 @@ func _ready() -> void:
 
     ftue_service = FtueServiceClass.new(data)
     ftue_service.ensure_state(state)
+    # Recovery is a boot-only concern. During live actions FTUE advances only
+    # from the explicit action result, preserving analytics and celebration.
+    ftue_service.reconcile(state)
     if ftue_service.active(state) and ftue_service.step(state) == 7:
         ftue_service.ensure_starter_request(state)
 
