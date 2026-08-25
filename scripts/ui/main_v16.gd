@@ -82,6 +82,38 @@ func _show_tab(tab: String) -> void:
 func _build_farm() -> void:
     FarmScreenClass.new().build(self)
 
+func _refresh_selected_panel() -> void:
+    super._refresh_selected_panel()
+    if ftue_service == null or not ftue_service.active(state):
+        return
+    if selected_action_button == null:
+        return
+
+    var guided_step: int = ftue_service.step(state)
+    var allowed_primary: String = ""
+    if guided_step == 0:
+        allowed_primary = "coop"
+    elif guided_step == 2:
+        allowed_primary = "compost"
+    elif guided_step == 5:
+        allowed_primary = "sansai"
+
+    # Players may inspect every facility, but only the current guided action can
+    # consume readiness/resources. This removes off-sequence FTUE deadlocks.
+    if selected_facility != allowed_primary:
+        selected_action_button.disabled = true
+        if quick_ready_label != null:
+            quick_ready_label.text = "今は別の手順"
+    elif quick_ready_label != null:
+        quick_ready_label.text = "作業OK" if not selected_action_button.disabled else "完了"
+
+    if quick_secondary_button != null:
+        var can_return_compost: bool = guided_step == 4 and selected_facility == "sansai" and int(state["inventory"].get("compost",0)) > 0
+        quick_secondary_button.visible = can_return_compost
+        quick_secondary_button.disabled = not can_return_compost
+        if can_return_compost and quick_ready_label != null:
+            quick_ready_label.text = "堆肥を還元"
+
 func _commit(result: Dictionary, return_tab: String, facility: String = "") -> void:
     var ok: bool = bool(result.get("ok",false))
     var kind: String = str(result.get("feedback","work"))
