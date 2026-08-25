@@ -75,10 +75,13 @@ func _init() -> void:
     _ok(_has_text(scene,"今日の出荷"),"market tab has product hero")
     _ok(_has_text(scene,"まとめて出荷"),"market has primary batch sell CTA")
 
+    runtime_state["ftue_v2"]["step"] = 7
+    runtime_state["ftue_v2"]["active"] = true
     scene.call("_show_tab","village")
     await process_frame
-    _ok(_has_text(scene,"今日の村"),"village daily hero leads the tab")
-    _ok(_has_text(scene,"納品"),"village keeps delivery interaction")
+    _ok(_has_text(scene,"今日の村"),"guided village beat has product hero")
+    _ok(_has_text(scene,"納品"),"guided village keeps delivery context")
+    _ok(_has_text(scene,"入手先：農場の雪国鶏舎"),"guided village connects request back to production")
 
     print("CURRENT PRODUCT UI CONTRACT COMPLETE failures=",failures)
     scene.queue_free()
