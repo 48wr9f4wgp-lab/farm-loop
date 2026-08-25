@@ -50,22 +50,25 @@ func _init() -> void:
     var desc = scene.get("selected_desc_label")
     _ok(desc != null and not desc.visible,"facility paragraph hidden from first screen")
 
-    # Vertical Slice 2 intentionally keeps the early work tab focused on the
-    # material beat, then reveals the three mountain routes at FTUE step 6.
-    scene.call("_show_tab","work")
-    await process_frame
-    _ok(_has_text(scene,"山仕事"),"early work tab keeps productive material action")
-    _ok(not _has_text(scene,"今日の山道を選ぶ"),"mountain route choice stays hidden before its FTUE beat")
-
     var runtime_state: Dictionary = scene.get("state")
-    runtime_state["ftue_v2"]["step"] = 6
+    runtime_state["ftue_v2"]["step"] = 0
     runtime_state["ftue_v2"]["active"] = true
     runtime_state["ftue_v2"]["completed"] = false
+
+    # Off-beat work visits should redirect instead of exposing repeatable chores.
+    scene.call("_show_tab","work")
+    await process_frame
+    _ok(_has_text(scene,"いまの手順"),"off-beat work tab shows focused guidance")
+    _ok(_has_text(scene,"農場へ戻る"),"off-beat work tab offers direct return CTA")
+    _ok(not _has_text(scene,"今日の山道を選ぶ"),"mountain route choice stays hidden before its FTUE beat")
+
+    runtime_state["ftue_v2"]["step"] = 6
     scene.call("_show_tab","work")
     await process_frame
     _ok(_has_text(scene,"山へ入る"),"mountain beat leads with exploration")
     _ok(_has_text(scene,"今日の山道を選ぶ"),"mountain beat presents route choice")
     _ok(_has_text(scene,"沢沿い") and _has_text(scene,"ブナ林") and _has_text(scene,"尾根"),"mountain beat exposes three meaningful routes")
+    _ok(not _has_text(scene,"落ち葉・籾殻を集める"),"mountain beat removes unrelated material chore")
 
     scene.call("_show_tab","market")
     await process_frame
