@@ -1,10 +1,21 @@
 class_name SaveService
 extends RefCounted
 
-const SAVE_PATH := "user://farm_loop_save.json"
-const BACKUP_PATH := "user://farm_loop_save.backup.json"
-const TEMP_PATH := "user://farm_loop_save.tmp.json"
 const SCHEMA_VERSION := 4
+
+var save_path: String = "user://farm_loop_save.json"
+var backup_path: String = "user://farm_loop_save.backup.json"
+var temp_path: String = "user://farm_loop_save.tmp.json"
+var slot_name: String = "main"
+
+func _init(slot: String = "main") -> void:
+    slot_name = slot
+    if slot == "main":
+        return
+    var safe := slot.to_lower().replace("-","_").replace(" ","_")
+    save_path = "user://farm_loop_%s_save.json" % safe
+    backup_path = "user://farm_loop_%s_save.backup.json" % safe
+    temp_path = "user://farm_loop_%s_save.tmp.json" % safe
 
 func _canonical_payload_text(payload: Dictionary) -> String:
     # JSON round-trip normalizes values the same way they will be represented
@@ -48,34 +59,34 @@ func _read_envelope(path: String) -> Dictionary:
     return payload
 
 func load_or_default(default_state: Dictionary) -> Dictionary:
-    var loaded := _read_envelope(SAVE_PATH)
+    var loaded := _read_envelope(save_path)
     if not loaded.is_empty():
         return migrate(loaded, default_state)
-    loaded = _read_envelope(BACKUP_PATH)
+    loaded = _read_envelope(backup_path)
     if not loaded.is_empty():
         return migrate(loaded, default_state)
     return default_state.duplicate(true)
 
 func save(payload: Dictionary) -> bool:
     var env := _envelope(payload)
-    var current_global := ProjectSettings.globalize_path(SAVE_PATH)
-    var backup_global := ProjectSettings.globalize_path(BACKUP_PATH)
-    if FileAccess.file_exists(SAVE_PATH):
+    var current_global := ProjectSettings.globalize_path(save_path)
+    var backup_global := ProjectSettings.globalize_path(backup_path)
+    if FileAccess.file_exists(save_path):
         DirAccess.copy_absolute(current_global, backup_global)
-    var tmp := FileAccess.open(TEMP_PATH, FileAccess.WRITE)
+    var tmp := FileAccess.open(temp_path, FileAccess.WRITE)
     if tmp == null:
         return false
     tmp.store_string(JSON.stringify(env, "", true, false))
     tmp.close()
-    var verify := _read_envelope(TEMP_PATH)
+    var verify := _read_envelope(temp_path)
     if verify.is_empty():
-        DirAccess.remove_absolute(ProjectSettings.globalize_path(TEMP_PATH))
+        DirAccess.remove_absolute(ProjectSettings.globalize_path(temp_path))
         return false
-    if FileAccess.file_exists(SAVE_PATH):
+    if FileAccess.file_exists(save_path):
         var remove_err := DirAccess.remove_absolute(current_global)
         if remove_err != OK:
             return false
-    var err := DirAccess.rename_absolute(ProjectSettings.globalize_path(TEMP_PATH), current_global)
+    var err := DirAccess.rename_absolute(ProjectSettings.globalize_path(temp_path), current_global)
     return err == OK
 
 func migrate(raw: Dictionary, defaults: Dictionary) -> Dictionary:
