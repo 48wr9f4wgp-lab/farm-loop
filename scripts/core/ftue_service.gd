@@ -45,7 +45,6 @@ func ensure_state(s: Dictionary) -> void:
         "village_seen":false,
         "starter_request_added":false
     }
-    reconcile(s)
 
 func _repair(s: Dictionary) -> void:
     var f: Dictionary = s["ftue_v2"]
@@ -60,7 +59,6 @@ func _repair(s: Dictionary) -> void:
     if not f.has("village_seen"): f["village_seen"] = false
     if not f.has("starter_request_added"): f["starter_request_added"] = false
     s["ftue_v2"] = f
-    reconcile(s)
 
 func active(s: Dictionary) -> bool:
     ensure_state(s)
@@ -82,8 +80,8 @@ func reconcile(s: Dictionary) -> void:
         s["ftue_v2"] = f
         return
 
-    # Recovery only skips a beat when the state proves it already happened.
-    # It never consumes resources or grants rewards.
+    # Recovery only skips a beat when a loaded state proves it already happened.
+    # This method is intentionally called at boot, not during normal action handling.
     if current == 0 and not bool(s.get("ready",{}).get("coop",true)):
         current = 1
     if current == 2 and (int(s.get("compost_queue",0)) > 0 or int(s.get("inventory",{}).get("compost",0)) > 0):
