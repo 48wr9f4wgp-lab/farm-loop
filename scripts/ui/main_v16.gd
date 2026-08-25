@@ -6,6 +6,7 @@ const B5SfxClass = preload("res://scripts/audio/sfx_player.gd")
 const FtueServiceClass = preload("res://scripts/core/ftue_service.gd")
 
 var ftue_service
+var runtime_slot: String = "main"
 
 func _ready() -> void:
     # Current runtime boot: bypass the historical version-by-version _ready chain.
@@ -18,18 +19,7 @@ func _ready() -> void:
     rules = B5CurrentRulesClass.new(data)
     save_service = SaveServiceClass.new()
     state = save_service.load_or_default(GameStateClass.create(data))
-    _ensure_v03_fields()
-    rules.ensure_product_fields(state)
-    rules.ensure_route_fields(state)
-    rules.ensure_requests(state)
-
-    ftue_service = FtueServiceClass.new(data)
-    ftue_service.ensure_state(state)
-    # Recovery is a boot-only concern. During live actions FTUE advances only
-    # from the explicit action result, preserving analytics and celebration.
-    ftue_service.reconcile(state)
-    if ftue_service.active(state) and ftue_service.step(state) == 7:
-        ftue_service.ensure_starter_request(state)
+    _prepare_current_state()
 
     # Historical boot guards are presentation concerns. They must be opened
     # before the single intentional first render below.
@@ -46,12 +36,66 @@ func _ready() -> void:
     _polish_mobile_shell()
 
     state["version"] = "godot-1.6-motion-audio"
-    _record_event("session_start",_slice_props())
+    _record_event("session_start",_slice_props({"slot":runtime_slot}))
     if ftue_service.mark_step_started(state):
         _record_event("ftue_step_started",_slice_props({"step":ftue_service.step(state)}))
     save_service.save(state)
     _header()
     _show_tab(current_tab)
+
+func _prepare_current_state() -> void:
+    _ensure_v03_fields()
+    rules.ensure_product_fields(state)
+    rules.ensure_route_fields(state)
+    rules.ensure_requests(state)
+
+    ftue_service = FtueServiceClass.new(data)
+    ftue_service.ensure_state(state)
+    # Recovery is a boot/load concern. During live actions FTUE advances only
+    # from the explicit action result, preserving analytics and celebration.
+    ftue_service.reconcile(state)
+    if ftue_service.active(state) and ftue_service.step(state) == 7:
+        ftue_service.ensure_starter_request(state)
+
+func _switch_save_slot(slot: String, fresh: bool) -> void:
+    runtime_slot = slot
+    save_service = SaveServiceClass.new(slot)
+    if fresh:
+        state = GameStateClass.create(data)
+    else:
+        state = save_service.load_or_default(GameStateClass.create(data))
+    _prepare_current_state()
+
+    selected_facility = str(state["ui"].get("selected_facility","coop"))
+    selected_channel = "roadside"
+    current_tab = str(state["ui"].get("last_tab","farm"))
+    if fresh:
+        selected_facility = "coop"
+        current_tab = "farm"
+        state["ui"]["selected_facility"] = "coop"
+        state["ui"]["last_tab"] = "farm"
+
+    state["version"] = "godot-1.6-motion-audio"
+    _record_event("session_start",_slice_props({"slot":runtime_slot,"fresh_test":fresh}))
+    if ftue_service.mark_step_started(state):
+        _record_event("ftue_step_started",_slice_props({"step":ftue_service.step(state)}))
+    save_service.save(state)
+    if sfx != null:
+        sfx.set_enabled(bool(state["settings"].get("sound",true)))
+    _header()
+    _show_tab(current_tab)
+
+func _on_start_ftue_test() -> void:
+    # Deliberately creates/replaces only the isolated ftue_test slot.
+    # The normal farm_loop_save.json is never read, modified or deleted here.
+    _switch_save_slot("ftue_test",true)
+    if feedback != null:
+        feedback.pop("初回体験テスト開始｜通常セーブはそのまま",3)
+
+func _on_return_main_save() -> void:
+    _switch_save_slot("main",false)
+    if feedback != null:
+        feedback.pop("通常セーブへ戻った",2)
 
 func _next_objective() -> String:
     if ftue_service != null and ftue_service.active(state):
