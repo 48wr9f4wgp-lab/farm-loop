@@ -104,6 +104,47 @@ jobs:
           rm -rf build/web && mkdir -p build/web
           godot --headless --path . --export-release "Web" build/web/index.html
           test -s build/web/index.html && test -s build/web/index.wasm && test -s build/web/index.pck
+      - name: Install Farm Loop home screen icon
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 ci/materialize_app_icon.py assets/branding/farm_loop_app_icon_180.png.b64 build/web/apple-touch-icon.png
+          cp build/web/apple-touch-icon.png build/web/favicon.png
+          cat > build/web/site.webmanifest <<'EOF'
+          {
+            "name": "Farm Loop",
+            "short_name": "Farm Loop",
+            "display": "standalone",
+            "background_color": "#e8eee4",
+            "theme_color": "#e8eee4",
+            "icons": [
+              {
+                "src": "apple-touch-icon.png",
+                "sizes": "180x180",
+                "type": "image/png",
+                "purpose": "any"
+              }
+            ]
+          }
+          EOF
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("build/web/index.html")
+          html = path.read_text(encoding="utf-8")
+          tags = (
+              '<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">'
+              '<link rel="icon" type="image/png" sizes="180x180" href="favicon.png">'
+              '<link rel="manifest" href="site.webmanifest">'
+          )
+          if "apple-touch-icon.png" not in html:
+              if "</head>" not in html:
+                  raise SystemExit("exported HTML has no </head>")
+              html = html.replace("</head>", tags + "</head>", 1)
+              path.write_text(html, encoding="utf-8")
+          PY
+          test -s build/web/apple-touch-icon.png
+          grep -q 'apple-touch-icon.png' build/web/index.html
+          grep -q 'site.webmanifest' build/web/index.html
       - name: Web artifact manifest
         run: python3 ci/build_manifest.py build/web > build/web/build_manifest.json
       - name: Upload testable Web artifact
