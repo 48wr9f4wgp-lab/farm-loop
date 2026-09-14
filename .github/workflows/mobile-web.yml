@@ -108,12 +108,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 ci/materialize_app_icon.py assets/branding/farm_loop_app_icon_180.png.b64 build/web/apple-touch-icon.png
-          cp build/web/apple-touch-icon.png build/web/index.apple-touch-icon.png
-          cp build/web/apple-touch-icon.png build/web/index.icon.png
-          cp build/web/apple-touch-icon.png build/web/index.png
-          cp build/web/apple-touch-icon.png build/web/favicon.png
-          cat > build/web/site.webmanifest <<'EOF'
+          ICON_NAME="farm-loop-icon-20260915.png"
+          python3 ci/materialize_app_icon.py assets/branding/farm_loop_app_icon_180.png.b64 "build/web/${ICON_NAME}"
+          cp "build/web/${ICON_NAME}" build/web/apple-touch-icon.png
+          cp "build/web/${ICON_NAME}" build/web/index.apple-touch-icon.png
+          cp "build/web/${ICON_NAME}" build/web/index.icon.png
+          cp "build/web/${ICON_NAME}" build/web/favicon.png
+          cat > build/web/site.webmanifest <<EOF
           {
             "name": "Farm Loop",
             "short_name": "Farm Loop",
@@ -122,7 +123,7 @@ jobs:
             "theme_color": "#e8eee4",
             "icons": [
               {
-                "src": "index.apple-touch-icon.png",
+                "src": "${ICON_NAME}",
                 "sizes": "180x180",
                 "type": "image/png",
                 "purpose": "any"
@@ -134,22 +135,26 @@ jobs:
           from pathlib import Path
           path = Path("build/web/index.html")
           html = path.read_text(encoding="utf-8")
+          icon_name = "farm-loop-icon-20260915.png"
+          html = html.replace("index.apple-touch-icon.png", icon_name)
+          html = html.replace("index.icon.png", icon_name)
           manifest_tag = '<link rel="manifest" href="site.webmanifest">'
           if 'site.webmanifest' not in html:
               if "</head>" not in html:
                   raise SystemExit("exported HTML has no </head>")
               html = html.replace("</head>", manifest_tag + "</head>", 1)
-              path.write_text(html, encoding="utf-8")
+          path.write_text(html, encoding="utf-8")
           PY
-          expected=$(sha256sum build/web/apple-touch-icon.png | awk '{print $1}')
-          for icon in build/web/index.apple-touch-icon.png build/web/index.icon.png build/web/index.png build/web/favicon.png; do
+          expected=$(sha256sum "build/web/${ICON_NAME}" | awk '{print $1}')
+          for icon in build/web/apple-touch-icon.png build/web/index.apple-touch-icon.png build/web/index.icon.png build/web/favicon.png; do
             test -s "$icon"
             actual=$(sha256sum "$icon" | awk '{print $1}')
             test "$actual" = "$expected"
           done
-          grep -q 'index.apple-touch-icon.png' build/web/index.html
-          grep -q 'index.icon.png' build/web/index.html
+          grep -q 'farm-loop-icon-20260915.png' build/web/index.html
           grep -q 'site.webmanifest' build/web/index.html
+          if grep -q 'index.apple-touch-icon.png' build/web/index.html; then exit 1; fi
+          if grep -q 'index.icon.png' build/web/index.html; then exit 1; fi
       - name: Web artifact manifest
         run: python3 ci/build_manifest.py build/web > build/web/build_manifest.json
       - name: Upload testable Web artifact
