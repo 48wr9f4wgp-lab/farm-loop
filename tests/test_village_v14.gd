@@ -34,6 +34,7 @@ func _init() -> void:
     var request: Dictionary = data.get_table("requests")[0].duplicate(true)
     request["done"] = false
 
+    # Legacy village domain behavior stays covered for rollback/reuse.
     var status_missing: Dictionary = rules.request_status(state,request)
     _ok(not bool(status_missing["ready"]),"request reports missing inventory")
     _ok(not str(status_missing["missing"]).is_empty(),"request explains missing items")
@@ -58,39 +59,44 @@ func _init() -> void:
     await process_frame
 
     var scene_state: Dictionary = scene.get("state")
+    _ok(scene_state.has("ftue_v3"),"runtime village test sees FTUE v3")
+
+    # Village is not a proof beat anymore. During the first restore loop it is a
+    # redirect, so it cannot hijack attention or consume required resources.
+    scene_state["ftue_v3"]["step"] = 4
+    scene_state["ftue_v3"]["active"] = true
+    scene_state["ftue_v3"]["completed"] = false
+    scene_state["restoration_v3"]["proof_mode"] = true
+    scene.call("_show_tab","village")
+    await process_frame
+    await process_frame
+
+    _ok(_has_text(scene,"いまの手順"),"V3 guided village visit redirects to current restore step")
+    _ok(_has_text(scene,"農場へ戻る"),"V3 guided village provides farm return CTA")
+    _ok(not _has_text(scene,"今日の村"),"V3 guided loop does not expose village request hero")
+
+    # Legacy village presentation remains available once proof mode is disabled.
     var scene_data = scene.get("data")
     var ui_request: Dictionary = scene_data.get_table("requests")[0].duplicate(true)
     ui_request["done"] = false
     scene_state["village_requests"] = [ui_request]
     scene_state["inventory"]["eggs"] = 5
-
-    # Guided village beat: purpose/request only, not the whole management UI.
-    scene_state["ftue_v2"]["step"] = 7
-    scene_state["ftue_v2"]["active"] = true
-    scene_state["ftue_v2"]["completed"] = false
+    scene_state["ftue_v3"]["step"] = 6
+    scene_state["ftue_v3"]["active"] = false
+    scene_state["ftue_v3"]["completed"] = true
+    scene_state["restoration_v3"]["proof_mode"] = false
     scene.call("_show_tab","village")
     await process_frame
     await process_frame
 
-    _ok(_has_text(scene,"今日の村"),"guided village leads with daily village hero")
-    _ok(_has_text(scene,"納品OK"),"guided village surfaces ready delivery state")
-    _ok(_has_text(scene,"美緒"),"guided request shows requester identity")
-    _ok(_has_text(scene,"必要："),"guided request need is visible")
-    _ok(_has_text(scene,"入手先：農場の雪国鶏舎"),"starter request tells player where the item comes from")
-    _ok(not _has_text(scene,"雪里の人々"),"guided beat hides relationship management noise")
+    _ok(_has_text(scene,"今日の村"),"legacy village hero remains available outside proof mode")
+    _ok(_has_text(scene,"納品OK"),"legacy village ready-delivery state remains functional")
+    _ok(_has_text(scene,"美緒"),"legacy request keeps requester identity")
+    _ok(_has_text(scene,"雪里の人々"),"legacy relationship section remains available")
+    _ok(_has_text(scene,"初回体験を最初から試す"),"non-destructive FTUE test entry remains available")
     var delivery := _find_button(scene,"へ納品")
-    _ok(delivery != null and delivery.custom_minimum_size.y >= 50.0,"delivery CTA keeps mobile tap target")
+    _ok(delivery != null and delivery.custom_minimum_size.y >= 50.0,"legacy delivery CTA keeps mobile tap target")
 
-    # After FTUE, the complete village meta returns, including the safe test tool.
-    scene_state["ftue_v2"]["step"] = 9
-    scene_state["ftue_v2"]["active"] = false
-    scene_state["ftue_v2"]["completed"] = true
-    scene.call("_show_tab","village")
-    await process_frame
-    _ok(_has_text(scene,"雪里の人々"),"free play restores relationship section")
-    _ok(_has_text(scene,"匠") and _has_text(scene,"源"),"free play shows all core villagers")
-    _ok(_has_text(scene,"初回体験を最初から試す"),"free play exposes non-destructive FTUE test entry")
-
-    print("CURRENT VILLAGE CONTRACT TESTS COMPLETE failures=",failures)
+    print("CURRENT VILLAGE LEGACY + V3 PROOF TESTS COMPLETE failures=",failures)
     scene.queue_free()
     quit(1 if failures > 0 else 0)
