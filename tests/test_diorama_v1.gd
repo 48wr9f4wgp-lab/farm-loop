@@ -1,6 +1,6 @@
 extends SceneTree
 
-const DioramaClass = preload("res://scripts/ui/farm_diorama_v8.gd")
+const DioramaClass = preload("res://scripts/ui/farm_diorama_v9.gd")
 
 var failures: int = 0
 
@@ -31,20 +31,20 @@ func _init() -> void:
     await process_frame
 
     _ok(bool(diorama.get("is_3d_diorama")),"farm renderer identifies as 3D diorama")
-    _ok(int(diorama.get("visual_pass")) == 6,"runtime renderer declares visual pass 6")
-    _ok(str(diorama.get("visual_target_id")) == "satoyama-premium-2026-09-15-v6","renderer is locked to fitted visual target")
+    _ok(int(diorama.get("visual_pass")) == 7,"runtime renderer declares visual pass 7")
+    _ok(str(diorama.get("visual_target_id")) == "satoyama-premium-2026-09-15-v7","renderer is locked to portrait-safe visual target")
     _ok(diorama.get("viewport_3d") is SubViewport,"3D diorama owns a SubViewport")
     var camera = diorama.get("camera")
     _ok(camera is Camera3D,"3D diorama owns a Camera3D")
     if camera is Camera3D:
         _ok(camera.projection == Camera3D.PROJECTION_ORTHOGONAL,"diorama uses orthographic camera")
-        _ok(camera.size >= 11.2,"guided focus no longer over-zooms and crops the farm")
+        _ok(camera.size >= 12.4,"guided focus keeps a real portrait framing gutter")
 
     var facilities: Dictionary = diorama.get("facility_nodes")
     _ok(facilities.has("coop") and facilities.has("compost") and facilities.has("sansai") and facilities.has("mushroom") and facilities.has("bee"),"all identity facilities exist in 3D")
     var world_root = diorama.get("world_root")
-    _ok(world_root != null and world_root.name == "SatoyamaDioramaV8","V8 world root is active")
-    _ok(world_root != null and world_root.get_node_or_null("VisualPass6FramingMarker") != null,"portrait framing fix marker is active")
+    _ok(world_root != null and world_root.name == "SatoyamaDioramaV9","V9 world root is active")
+    _ok(world_root != null and world_root.get_node_or_null("VisualPass7SafeFrameMarker") != null,"hard portrait safe-frame marker is active")
     var restore_root = diorama.get("restore_root")
     _ok(restore_root != null and restore_root.get_node_or_null("GuidedRestoreFocus") != null,"guided restoration keeps world-space focus treatment")
     var ready_markers: Dictionary = diorama.get("ready_markers")
@@ -71,13 +71,18 @@ func _init() -> void:
     var viewport_width: float = scene.get_viewport_rect().size.x
     var root_box = scene.get("root_box") as Control
     var money_chip = scene.get("money_chip") as Control
+    var season_chip = scene.get("season_chip") as Control
     if root_box != null:
         var root_rect := root_box.get_global_rect()
-        _ok(root_rect.position.x >= -0.5,"HUD starts inside portrait viewport")
-        _ok(root_rect.end.x <= viewport_width + 0.5,"HUD stays inside portrait viewport")
+        _ok(root_rect.position.x >= 10.0,"HUD keeps a left portrait gutter")
+        _ok(root_rect.end.x <= viewport_width - 20.0,"HUD keeps a deliberate right portrait gutter")
     if money_chip != null:
         var money_rect := money_chip.get_global_rect()
-        _ok(money_rect.end.x <= viewport_width + 0.5,"money chip stays inside right screen edge")
+        _ok(money_rect.end.x <= viewport_width - 20.0,"money chip stays clear of the physical right edge")
+        _ok(money_rect.size.x <= 72.0,"money chip cannot consume the season row")
+    if season_chip != null:
+        var season_rect := season_chip.get_global_rect()
+        _ok(season_rect.end.x <= viewport_width - 88.0,"season label leaves reserved width for money chip")
 
     var state: Dictionary = scene.get("state")
     state["ftue_v3"]["step"] = 3
@@ -107,10 +112,11 @@ func _init() -> void:
     var focused_map = scene.get("map")
     _ok(focused_map != null and str(focused_map.get("guided_focus")) == "sansai","FTUE step 5 focuses restoration patch")
     if focused_map != null:
-        _ok(str(focused_map.get_script().resource_path).ends_with("farm_diorama_v8.gd"),"runtime uses fitted visual-pass-6 diorama v8")
+        _ok(str(focused_map.get_script().resource_path).ends_with("farm_diorama_v9.gd"),"runtime uses portrait-safe visual-pass-7 diorama v9")
+        _ok(focused_map.custom_minimum_size.y <= 500.0,"hero height preserves portrait horizontal framing")
         var runtime_camera = focused_map.get("camera")
         if runtime_camera is Camera3D:
-            _ok(runtime_camera.size >= 11.2,"runtime guided camera keeps safe framing")
+            _ok(runtime_camera.size >= 12.4,"runtime guided camera keeps hard safe framing")
 
     if restore_button != null:
         restore_button.emit_signal("pressed")
@@ -119,6 +125,6 @@ func _init() -> void:
         _ok(int(state["ftue_v3"]["step"]) == 5,"restore CTA advances Restore Loop FTUE")
         _ok(int(state["restoration_v3"].get("first_patch_stage",0)) >= 1,"restore CTA advances land restoration")
 
-    print("3D DIORAMA V8 PORTRAIT CONTRACT COMPLETE failures=",failures)
+    print("3D DIORAMA V9 HARD PORTRAIT CONTRACT COMPLETE failures=",failures)
     scene.queue_free()
     quit(1 if failures > 0 else 0)
