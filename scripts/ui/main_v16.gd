@@ -21,14 +21,13 @@ func _ready() -> void:
     state = save_service.load_or_default(GameStateClass.create(data))
     _prepare_current_state()
 
-    # Historical boot guards are presentation concerns. They must be opened
-    # before the single intentional first render below.
     _v09_boot_guard = false
     _v10_boot_guard = false
 
     _build_shell()
     selected_facility = str(state["ui"].get("selected_facility","coop"))
     current_tab = str(state["ui"].get("last_tab","farm"))
+    _apply_proof_navigation()
 
     sfx = B5SfxClass.new()
     add_child(sfx)
@@ -55,6 +54,21 @@ func _prepare_current_state() -> void:
     # from the explicit action result, preserving analytics and celebration.
     ftue_service.reconcile(state)
 
+func _proof_mode_active() -> bool:
+    return bool(state.get("restoration_v3",{}).get("proof_mode",false))
+
+func _apply_proof_navigation() -> void:
+    if nav_buttons.is_empty():
+        return
+    var proof: bool = _proof_mode_active()
+    if nav_buttons.has("market"):
+        nav_buttons["market"].visible = not proof
+    if nav_buttons.has("village"):
+        nav_buttons["village"].text = "設定" if proof else "村"
+    if proof and current_tab == "market":
+        current_tab = "farm"
+        state["ui"]["last_tab"] = "farm"
+
 func _switch_save_slot(slot: String, fresh: bool) -> void:
     runtime_slot = slot
     save_service = SaveServiceClass.new(slot)
@@ -72,6 +86,7 @@ func _switch_save_slot(slot: String, fresh: bool) -> void:
         current_tab = "farm"
         state["ui"]["selected_facility"] = "coop"
         state["ui"]["last_tab"] = "farm"
+    _apply_proof_navigation()
 
     state["version"] = "godot-v3-restore-loop"
     _record_event("session_start",_slice_props({"slot":runtime_slot,"fresh_test":fresh}))
@@ -84,8 +99,6 @@ func _switch_save_slot(slot: String, fresh: bool) -> void:
     _show_tab(current_tab)
 
 func _on_start_ftue_test() -> void:
-    # Deliberately creates/replaces only the isolated ftue_test slot.
-    # The normal farm_loop_save.json is never read, modified or deleted here.
     _switch_save_slot("ftue_test",true)
     _record_event("restoration_patch_viewed",_slice_props({"patch":"first_patch","stage":0}))
     if feedback != null:
@@ -142,8 +155,6 @@ func _refresh_selected_panel() -> void:
     elif guided_step == 5:
         allowed_primary = "sansai"
 
-    # Players may inspect every facility, but only the current restore-loop
-    # action can consume readiness/resources. This prevents proof-slice deadlocks.
     if selected_facility != allowed_primary:
         selected_action_button.disabled = true
         if quick_ready_label != null:
@@ -171,8 +182,6 @@ func _commit(result: Dictionary, return_tab: String, facility: String = "") -> v
     if ok:
         _record_slice_action(result,kind,facility,from_step)
 
-    # Preserve mature product feedback/daily/chain behavior while V3 proof is
-    # orchestrated by the focused restoration service above.
     super._commit(result,return_tab,facility)
 
     if bool(transition.get("advanced",false)):
@@ -217,7 +226,7 @@ func _record_slice_action(result: Dictionary, kind: String, facility: String, fr
         _record_event("compost_create",_slice_props({"facility":"compost"}))
     elif kind in ["month","hazard"]:
         _record_event("month_advance",_slice_props())
-        if ftue_service != null and not ftue_service.active(state) and bool(state.get("restoration_v3",{}).get("proof_mode",false)) and not bool(state["restoration_v3"].get("next_month_voluntary_recorded",false)):
+        if ftue_service != null and not ftue_service.active(state) and _proof_mode_active() and not bool(state["restoration_v3"].get("next_month_voluntary_recorded",false)):
             state["restoration_v3"]["next_month_voluntary_recorded"] = true
             _record_event("next_month_voluntary",_slice_props())
     elif facility == "sansai" and kind == "loop":
@@ -228,7 +237,6 @@ func _record_slice_action(result: Dictionary, kind: String, facility: String, fr
     elif facility == "sansai" and kind == "collect":
         _record_event("sansai_harvest",_slice_props({"facility":"sansai"}))
     elif facility == "mountain" and not route.is_empty():
-        # Legacy free-play telemetry. Mountain routes are not V3 proof-gate beats.
         _record_event("mountain_route_selected",_slice_props({"route":route}))
         _record_event("mountain_result",_slice_props({
             "route":route,
@@ -236,7 +244,6 @@ func _record_slice_action(result: Dictionary, kind: String, facility: String, fr
             "find":str(result.get("find",""))
         }))
     elif kind == "sell":
-        # Legacy free-play telemetry. Selling is secondary in the V3 proof slice.
         _record_event("market_sell",_slice_props({"channel":selected_channel}))
 
 func _slice_props(extra: Dictionary = {}) -> Dictionary:
