@@ -15,12 +15,24 @@ func build(host) -> void:
 
     var guided: bool = host.ftue_service != null and host.ftue_service.active(host.state)
     var guided_step: int = host.ftue_service.step(host.state) if guided else -1
+    var proof_mode: bool = bool(host.state.get("restoration_v3",{}).get("proof_mode",false))
+
+    # Product Reset v3: Work exists only to feed the restoration loop during
+    # proof. Mountain routes/processing/upgrades remain in legacy free play for
+    # rollback and reuse, but are not allowed to compete with the core promise.
+    if proof_mode:
+        if guided and guided_step == 1:
+            _build_field(host,true)
+        elif guided:
+            _build_guided_redirect(host,guided_step)
+        else:
+            _build_restore_followup(host)
+            _build_field(host,true)
+        return
 
     if guided:
         if guided_step == 1:
             _build_field(host,true)
-        elif guided_step == 6:
-            _build_routes(host,strong_left,rank_info,last_route,last_find)
         else:
             _build_guided_redirect(host,guided_step)
         return
@@ -49,20 +61,19 @@ func build(host) -> void:
         project_button.disabled = installed
         safety.add_child(project_button)
 
-func _build_guided_redirect(host, guided_step: int) -> void:
+func _build_guided_redirect(host, _guided_step: int) -> void:
     var guide: VBoxContainer = host._section("いまの手順")
     guide.add_child(host._lead_text(host.ftue_service.objective(host.state)))
-    var target_tab: String = "farm"
-    var label_text: String = "農場へ戻る"
-    if guided_step == 7:
-        target_tab = "village"
-        label_text = "村へ行く"
-    elif guided_step >= 8:
-        target_tab = "market"
-        label_text = "販売へ行く"
-    var go: Button = host._button(label_text,Callable(host,"_show_tab").bind(target_tab),true,false)
+    var go: Button = host._button("農場へ戻る",Callable(host,"_show_tab").bind("farm"),true,false)
     go.custom_minimum_size.y = 54
     guide.add_child(go)
+
+func _build_restore_followup(host) -> void:
+    var restore: VBoxContainer = host._section("次の里山再生")
+    restore.add_child(host._lead_text("最初の区画が蘇った。次は月を進め、里山に何が戻るか確かめよう。"))
+    var go: Button = host._button("農場で次の月を見る",Callable(host,"_show_tab").bind("farm"),true,false)
+    go.custom_minimum_size.y = 54
+    restore.add_child(go)
 
 func _build_routes(host, strong_left: int, rank_info: Dictionary, last_route: String, last_find: String) -> void:
     var explore: VBoxContainer = host._section("山へ入る")
@@ -91,8 +102,8 @@ func _build_routes(host, strong_left: int, rank_info: Dictionary, last_route: St
     explore.add_child(recent)
 
 func _build_field(host, guided: bool) -> void:
-    var field: VBoxContainer = host._section("山仕事")
-    field.add_child(host._lead_text("拾った恵みを農場へ戻す。ここから循環が強くなる。"))
+    var field: VBoxContainer = host._section("循環の材料")
+    field.add_child(host._lead_text("落ち葉や籾殻は捨てずに堆肥へ。土へ戻すための材料を集める。"))
     var gather: Button = host._button("落ち葉・籾殻を集める",Callable(host,"_on_gather_leaves"),true,false)
     field.add_child(gather)
 
