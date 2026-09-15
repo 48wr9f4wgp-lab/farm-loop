@@ -3,6 +3,7 @@ extends RefCounted
 
 const FarmMapV09Class = preload("res://scripts/ui/farm_map_v09.gd")
 const ProductMapOverlayV09Class = preload("res://scripts/ui/product_map_overlay_v09.gd")
+const RestorationPatchOverlayV3Class = preload("res://scripts/ui/restoration_patch_overlay_v3.gd")
 const FarmPolishOverlayV15Class = preload("res://scripts/ui/farm_polish_overlay_v15.gd")
 const FacilityActionOverlayV16Class = preload("res://scripts/ui/facility_action_overlay_v16.gd")
 
@@ -21,12 +22,15 @@ func build(host) -> void:
     var guided: bool = host.ftue_service != null and host.ftue_service.active(host.state)
     var guided_step: int = host.ftue_service.step(host.state) if guided else -1
 
-    # During proof-of-fun FTUE, keep the farm visual and the one action that
-    # matters. Management summaries return after the guided loop is complete.
+    # V3 keeps the environment as the hero. Administrative summaries stay out
+    # of the first restore loop; one small restoration readout explains what
+    # changed without turning the map into a dashboard.
     if guided:
+        _build_restore_status(host)
         if guided_step == 3:
             _build_circulation(host)
     else:
+        _build_restore_status(host)
         _build_notebook(host)
         _build_mountain(host)
         _build_chain(host)
@@ -99,6 +103,15 @@ func _build_map(host) -> void:
     host.content.add_child(farm_map)
     host.map = farm_map
 
+    var restore_stage: int = int(host.state.get("restoration_v3",{}).get("first_patch_stage",0))
+    if host.ftue_service != null and host.ftue_service.has_method("restoration_stage"):
+        restore_stage = int(host.ftue_service.restoration_stage(host.state))
+    var restoration = RestorationPatchOverlayV3Class.new()
+    restoration.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    restoration.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    restoration.set_restore_state(restore_stage,bool(host.state["settings"].get("reduced_motion",false)))
+    farm_map.add_child(restoration)
+
     var progress: Dictionary = host.rules.land_progress(host.state)
     var art = ProductMapOverlayV09Class.new()
     art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -119,6 +132,31 @@ func _build_map(host) -> void:
     action_fx.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     action_fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
     farm_map.add_child(action_fx)
+
+func _build_restore_status(host) -> void:
+    var stage: int = int(host.state.get("restoration_v3",{}).get("first_patch_stage",0))
+    if host.ftue_service != null and host.ftue_service.has_method("restoration_stage"):
+        stage = int(host.ftue_service.restoration_stage(host.state))
+
+    var restore: VBoxContainer = host._section("里山の回復")
+    var headline := Label.new()
+    headline.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    headline.add_theme_font_size_override("font_size",15)
+    headline.add_theme_color_override("font_color",GREEN_DARK)
+    if stage <= 0:
+        headline.text = "荒れた山菜区画｜土が痩せて、生きものも少ない"
+    elif stage == 1:
+        headline.text = "回復中｜堆肥が土へ戻り、新しい芽と生きものが戻り始めた"
+    else:
+        headline.text = "恵みが戻った｜植物と小さな生きものが増えた"
+    restore.add_child(headline)
+
+    var progress := ProgressBar.new()
+    progress.max_value = 2
+    progress.value = stage
+    progress.show_percentage = false
+    progress.custom_minimum_size = Vector2(0,12)
+    restore.add_child(progress)
 
 func _build_notebook(host) -> void:
     var notebook: VBoxContainer = host._section("里山手帳")
