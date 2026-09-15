@@ -1,5 +1,5 @@
 name: Farm Loop Mobile Web
-# smartphone-ci-pages-vertical-slice-2-ftue
+# smartphone-ci-pages-restore-loop-v3
 
 on:
   push:
@@ -31,7 +31,7 @@ jobs:
         with:
           script: |
             const title='Farm Loop smartphone CI status';
-            const body=['Farm Loop Godot v1.6 CI: **running**',`Commit: ${context.sha}`,`Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`].join('\n');
+            const body=['Farm Loop Restore Loop v3 CI: **running**',`Commit: ${context.sha}`,`Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`].join('\n');
             const {data:issues}=await github.rest.issues.listForRepo({owner:context.repo.owner,repo:context.repo.repo,state:'all',per_page:100});
             const existing=issues.find(i=>i.title===title&&!i.pull_request);
             if(existing) await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,issue_number:existing.number,body,state:'open'});
@@ -71,8 +71,10 @@ jobs:
         run: timeout 30s godot --headless --path . --script tests/test_rules_current_b3.gd
       - name: Current runtime B5 contract
         run: timeout 30s godot --headless --path . --script tests/test_runtime_b5.gd
-      - name: Vertical Slice FTUE v2 contract
+      - name: Legacy Vertical Slice FTUE v2 contract
         run: timeout 30s godot --headless --path . --script tests/test_ftue_v2.gd
+      - name: Vertical Slice FTUE v3 restore contract
+        run: timeout 30s godot --headless --path . --script tests/test_ftue_v3.gd
       - name: Entertainment v0.5 tests
         run: timeout 30s godot --headless --path . --script tests/test_entertainment_v05.gd
       - name: Productization v0.6 tests
@@ -169,7 +171,7 @@ jobs:
         with:
           script: |
             const title='Farm Loop smartphone CI status'; const status='${{ job.status }}';
-            const body=[`Farm Loop Godot v1.6 build: **${status}**`,`Commit: ${context.sha}`,`Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`].join('\n');
+            const body=[`Farm Loop Restore Loop v3 build: **${status}**`,`Commit: ${context.sha}`,`Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`].join('\n');
             const {data:issues}=await github.rest.issues.listForRepo({owner:context.repo.owner,repo:context.repo.repo,state:'all',per_page:100}); const existing=issues.find(i=>i.title===title&&!i.pull_request); const state=status==='success'?'closed':'open';
             if(existing) await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,issue_number:existing.number,body,state}); else await github.rest.issues.create({owner:context.repo.owner,repo:context.repo.repo,title,body});
 
@@ -201,6 +203,6 @@ jobs:
         with:
           script: |
             const title='Farm Loop smartphone CI status'; const status='${{ job.status }}'; const pageUrl='${{ steps.deployment.outputs.page_url }}';
-            const body=[`Farm Loop Godot v1.6 Web deploy: **${status}**`,`Commit: ${context.sha}`,`Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,pageUrl?`Safari preview: ${pageUrl}`:'Safari preview: not deployed'].join('\n');
+            const body=[`Farm Loop Restore Loop v3 Web deploy: **${status}**`,`Commit: ${context.sha}`,`Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,pageUrl?`Safari preview: ${pageUrl}`:'Safari preview: not deployed'].join('\n');
             const {data:issues}=await github.rest.issues.listForRepo({owner:context.repo.owner,repo:context.repo.repo,state:'all',per_page:100}); const existing=issues.find(i=>i.title===title&&!i.pull_request); const state=status==='success'?'closed':'open';
             if(existing) await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,issue_number:existing.number,body,state}); else await github.rest.issues.create({owner:context.repo.owner,repo:context.repo.repo,title,body});
