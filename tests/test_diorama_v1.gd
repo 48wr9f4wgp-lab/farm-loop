@@ -1,6 +1,6 @@
 extends SceneTree
 
-const DioramaClass = preload("res://scripts/ui/farm_diorama_v9.gd")
+const DioramaClass = preload("res://scripts/ui/farm_diorama_v10.gd")
 
 var failures: int = 0
 
@@ -31,22 +31,23 @@ func _init() -> void:
     await process_frame
 
     _ok(bool(diorama.get("is_3d_diorama")),"farm renderer identifies as 3D diorama")
-    _ok(int(diorama.get("visual_pass")) == 7,"runtime renderer declares visual pass 7")
-    _ok(str(diorama.get("visual_target_id")) == "satoyama-premium-2026-09-15-v7","renderer is locked to portrait-safe visual target")
+    _ok(int(diorama.get("visual_pass")) == 8,"runtime renderer declares visual pass 8")
+    _ok(str(diorama.get("visual_target_id")) == "satoyama-premium-2026-09-15-v8","renderer is locked to hierarchy visual target")
     _ok(diorama.get("viewport_3d") is SubViewport,"3D diorama owns a SubViewport")
     var camera = diorama.get("camera")
     _ok(camera is Camera3D,"3D diorama owns a Camera3D")
     if camera is Camera3D:
         _ok(camera.projection == Camera3D.PROJECTION_ORTHOGONAL,"diorama uses orthographic camera")
-        _ok(camera.size >= 12.4,"guided focus keeps a real portrait framing gutter")
+        _ok(camera.size >= 12.4,"guided focus preserves hard portrait safe framing")
 
     var facilities: Dictionary = diorama.get("facility_nodes")
     _ok(facilities.has("coop") and facilities.has("compost") and facilities.has("sansai") and facilities.has("mushroom") and facilities.has("bee"),"all identity facilities exist in 3D")
     var world_root = diorama.get("world_root")
-    _ok(world_root != null and world_root.name == "SatoyamaDioramaV9","V9 world root is active")
-    _ok(world_root != null and world_root.get_node_or_null("VisualPass7SafeFrameMarker") != null,"hard portrait safe-frame marker is active")
+    _ok(world_root != null and world_root.name == "SatoyamaDioramaV10","V10 world root is active")
+    _ok(world_root != null and world_root.get_node_or_null("VisualPass8HierarchyMarker") != null,"visual hierarchy marker is active")
     var restore_root = diorama.get("restore_root")
     _ok(restore_root != null and restore_root.get_node_or_null("GuidedRestoreFocus") != null,"guided restoration keeps world-space focus treatment")
+    _ok(restore_root != null and restore_root.get_node_or_null("RestorationHierarchyV10") != null,"restoration patch has authored visual hierarchy treatment")
     var ready_markers: Dictionary = diorama.get("ready_markers")
     if ready_markers.has("sansai"):
         _ok(bool(ready_markers["sansai"].visible),"guided restoration keeps target marker visible")
@@ -112,7 +113,7 @@ func _init() -> void:
     var focused_map = scene.get("map")
     _ok(focused_map != null and str(focused_map.get("guided_focus")) == "sansai","FTUE step 5 focuses restoration patch")
     if focused_map != null:
-        _ok(str(focused_map.get_script().resource_path).ends_with("farm_diorama_v9.gd"),"runtime uses portrait-safe visual-pass-7 diorama v9")
+        _ok(str(focused_map.get_script().resource_path).ends_with("farm_diorama_v10.gd"),"runtime uses hierarchy visual-pass-8 diorama v10")
         _ok(focused_map.custom_minimum_size.y <= 500.0,"hero height preserves portrait horizontal framing")
         var runtime_camera = focused_map.get("camera")
         if runtime_camera is Camera3D:
@@ -125,6 +126,6 @@ func _init() -> void:
         _ok(int(state["ftue_v3"]["step"]) == 5,"restore CTA advances Restore Loop FTUE")
         _ok(int(state["restoration_v3"].get("first_patch_stage",0)) >= 1,"restore CTA advances land restoration")
 
-    print("3D DIORAMA V9 HARD PORTRAIT CONTRACT COMPLETE failures=",failures)
+    print("3D DIORAMA V10 HIERARCHY CONTRACT COMPLETE failures=",failures)
     scene.queue_free()
     quit(1 if failures > 0 else 0)
