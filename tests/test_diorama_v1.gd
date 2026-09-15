@@ -1,6 +1,6 @@
 extends SceneTree
 
-const DioramaClass = preload("res://scripts/ui/farm_diorama_v13.gd")
+const DioramaClass = preload("res://scripts/ui/farm_diorama_v14.gd")
 
 var failures: int = 0
 
@@ -40,8 +40,8 @@ func _init() -> void:
     await process_frame
 
     _ok(bool(diorama.get("is_3d_diorama")),"farm renderer identifies as 3D diorama")
-    _ok(int(diorama.get("visual_pass")) == 11,"runtime renderer declares visual pass 11")
-    _ok(str(diorama.get("visual_target_id")) == "satoyama-premium-2026-09-15-v11","renderer is locked to guided portrait visual target")
+    _ok(int(diorama.get("visual_pass")) == 12,"runtime renderer declares alpha visual pass 12")
+    _ok(str(diorama.get("visual_target_id")) == "satoyama-premium-2026-09-16-alpha-rc","renderer is locked to alpha readiness visual target")
     _ok(diorama.get("viewport_3d") is SubViewport,"3D diorama owns a SubViewport")
     var camera = diorama.get("camera")
     _ok(camera is Camera3D,"3D diorama owns a Camera3D")
@@ -52,10 +52,11 @@ func _init() -> void:
     var facilities: Dictionary = diorama.get("facility_nodes")
     _ok(facilities.has("coop") and facilities.has("compost") and facilities.has("sansai") and facilities.has("mushroom") and facilities.has("bee"),"all identity facilities exist in 3D")
     var world_root = diorama.get("world_root")
-    _ok(world_root != null and world_root.name == "SatoyamaDioramaV13","V13 world root is active")
+    _ok(world_root != null and world_root.name == "SatoyamaDioramaV14","V14 world root is active")
     _ok(world_root != null and world_root.get_node_or_null("GuidedInteractionLockMarker") != null,"guided interaction lock remains active")
     _ok(world_root != null and world_root.get_node_or_null("PremiumDetailLayerV12") != null,"premium satoyama world detail layer remains active")
-    _ok(world_root != null and world_root.get_node_or_null("GuidedTargetClarityV13") != null,"guided target clarity marker is active")
+    _ok(world_root != null and world_root.get_node_or_null("GuidedTargetClarityV13") != null,"guided target clarity marker remains active")
+    _ok(world_root != null and world_root.get_node_or_null("AlphaReadinessVisualV14") != null,"alpha readiness visual marker is active")
 
     if facilities.has("coop"):
         _ok(facilities["coop"].get_node_or_null("PremiumCoopV12") != null,"coop has premium rural detail")
@@ -69,9 +70,12 @@ func _init() -> void:
     var restore_root = diorama.get("restore_root")
     _ok(restore_root != null and restore_root.get_node_or_null("GuidedRestoreFocus") != null,"guided restoration keeps world-space focus treatment")
     _ok(restore_root != null and restore_root.get_node_or_null("RestorationHierarchyV10") != null,"restoration patch keeps authored visual hierarchy treatment")
-    _ok(restore_root != null and restore_root.get_node_or_null("RestorationPayoffV12") != null,"restoration patch has stronger before-after payoff treatment")
+    _ok(restore_root != null and restore_root.get_node_or_null("RestorationPayoffV12") != null,"restoration patch keeps premium before-after treatment")
+    _ok(restore_root != null and restore_root.get_node_or_null("AlphaRestorationPayoffV14") != null,"restoration patch has alpha payoff layer")
     var premium_motion_nodes: Array = diorama.get("premium_motion_nodes")
     _ok(premium_motion_nodes.size() >= 5,"premium pass includes restrained environmental motion")
+    var alpha_motion_nodes: Array = diorama.get("alpha_motion_nodes")
+    _ok(alpha_motion_nodes.size() >= 4,"alpha payoff includes visible returning-life motion")
 
     var ready_markers: Dictionary = diorama.get("ready_markers")
     if ready_markers.has("sansai"):
@@ -81,8 +85,6 @@ func _init() -> void:
     if ready_markers.has("bee"):
         _ok(not bool(ready_markers["bee"].visible),"guided restoration suppresses bee marker competition")
 
-    # Regression from physical iPhone recording: while FTUE step 5 highlights
-    # sansai, tapping bee/coop/mushroom must not select or move to them.
     var selected_events: Array = []
     diorama.facility_selected.connect(func(id): selected_events.append(id))
     if camera is Camera3D:
@@ -126,8 +128,6 @@ func _init() -> void:
 
     var state: Dictionary = scene.get("state")
 
-    # Physical iPhone screenshot regression: early FTUE should not expose a
-    # clipped recovery card behind the fixed bottom navigation.
     state["ftue_v3"]["step"] = 0
     state["ftue_v3"]["active"] = true
     state["ftue_v3"]["completed"] = false
@@ -135,7 +135,7 @@ func _init() -> void:
     await process_frame
     await process_frame
     var early_map = scene.get("map")
-    _ok(early_map != null and str(early_map.get_script().resource_path).ends_with("farm_diorama_v13.gd"),"early FTUE uses guided portrait diorama v13")
+    _ok(early_map != null and str(early_map.get_script().resource_path).ends_with("farm_diorama_v14.gd"),"early FTUE uses alpha readiness diorama v14")
     if early_map != null:
         _ok(early_map.custom_minimum_size.y <= 420.0,"early guided hero stays clear of fixed bottom navigation")
         _ok(str(early_map.get("guided_focus")) == "coop","FTUE step 1 focuses the coop")
@@ -171,7 +171,7 @@ func _init() -> void:
     var focused_map = scene.get("map")
     _ok(focused_map != null and str(focused_map.get("guided_focus")) == "sansai","FTUE step 5 focuses restoration patch")
     if focused_map != null:
-        _ok(str(focused_map.get_script().resource_path).ends_with("farm_diorama_v13.gd"),"runtime uses guided portrait diorama v13")
+        _ok(str(focused_map.get_script().resource_path).ends_with("farm_diorama_v14.gd"),"runtime uses alpha readiness diorama v14")
         _ok(focused_map.custom_minimum_size.y <= 420.0,"guided hero remains compact in portrait")
         var runtime_camera = focused_map.get("camera")
         if runtime_camera is Camera3D:
@@ -183,7 +183,11 @@ func _init() -> void:
         await process_frame
         _ok(int(state["ftue_v3"]["step"]) == 5,"restore CTA advances Restore Loop FTUE")
         _ok(int(state["restoration_v3"].get("first_patch_stage",0)) >= 1,"restore CTA advances land restoration")
+        var restored_map = scene.get("map")
+        if restored_map != null:
+            var restored_root = restored_map.get("restore_root")
+            _ok(restored_root != null and restored_root.get_node_or_null("AlphaRestorationPayoffV14") != null,"runtime rebuild keeps alpha restoration payoff")
 
-    print("3D DIORAMA V13 GUIDED PORTRAIT CONTRACT COMPLETE failures=",failures)
+    print("3D DIORAMA V14 ALPHA READINESS CONTRACT COMPLETE failures=",failures)
     scene.queue_free()
     quit(1 if failures > 0 else 0)
