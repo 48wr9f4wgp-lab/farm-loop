@@ -51,38 +51,42 @@ func _init() -> void:
     _ok(desc != null and not desc.visible,"facility paragraph hidden from first screen")
 
     var runtime_state: Dictionary = scene.get("state")
-    runtime_state["ftue_v2"]["step"] = 0
-    runtime_state["ftue_v2"]["active"] = true
-    runtime_state["ftue_v2"]["completed"] = false
+    _ok(runtime_state.has("ftue_v3"),"runtime uses FTUE v3 state")
+    _ok(runtime_state.has("restoration_v3"),"runtime has explicit restoration state")
+    runtime_state["ftue_v3"]["step"] = 0
+    runtime_state["ftue_v3"]["active"] = true
+    runtime_state["ftue_v3"]["completed"] = false
+    runtime_state["restoration_v3"]["proof_mode"] = true
 
-    # Off-beat work visits should redirect instead of exposing repeatable chores.
+    # Off-beat visits must redirect instead of exposing unrelated systems.
     scene.call("_show_tab","work")
     await process_frame
     _ok(_has_text(scene,"いまの手順"),"off-beat work tab shows focused guidance")
     _ok(_has_text(scene,"農場へ戻る"),"off-beat work tab offers direct return CTA")
-    _ok(not _has_text(scene,"今日の山道を選ぶ"),"mountain route choice stays hidden before its FTUE beat")
+    _ok(not _has_text(scene,"今日の山道を選ぶ"),"mountain route choice stays outside V3 proof")
 
-    runtime_state["ftue_v2"]["step"] = 6
+    runtime_state["ftue_v3"]["step"] = 1
     scene.call("_show_tab","work")
     await process_frame
-    _ok(_has_text(scene,"山へ入る"),"mountain beat leads with exploration")
-    _ok(_has_text(scene,"今日の山道を選ぶ"),"mountain beat presents route choice")
-    _ok(_has_text(scene,"沢沿い") and _has_text(scene,"ブナ林") and _has_text(scene,"尾根"),"mountain beat exposes three meaningful routes")
-    _ok(not _has_text(scene,"落ち葉・籾殻を集める"),"mountain beat removes unrelated material chore")
+    _ok(_has_text(scene,"落ち葉・籾殻を集める"),"V3 material beat exposes only restoration input")
+    _ok(not _has_text(scene,"沢沿い") and not _has_text(scene,"尾根"),"material beat has no mountain-route noise")
+
+    runtime_state["ftue_v3"]["step"] = 4
+    runtime_state["restoration_v3"]["first_patch_stage"] = 0
+    scene.call("_show_tab","farm")
+    await process_frame
+    _ok(_has_text(scene,"里山の回復"),"farm surfaces restoration status")
+    _ok(_has_text(scene,"荒れた山菜区画"),"damaged patch state is readable before restoration")
 
     scene.call("_show_tab","market")
     await process_frame
-    _ok(_has_text(scene,"今日の出荷"),"market tab has product hero")
-    _ok(_has_text(scene,"まとめて出荷"),"market has primary batch sell CTA")
+    _ok(_has_text(scene,"今は里山を蘇らせる"),"market is explicitly de-emphasized in V3 proof")
+    _ok(not _has_text(scene,"売り先を選ぶ"),"channel comparison is absent from V3 proof")
 
-    runtime_state["ftue_v2"]["step"] = 7
-    runtime_state["ftue_v2"]["active"] = true
     scene.call("_show_tab","village")
     await process_frame
-    _ok(_has_text(scene,"今日の村"),"guided village beat has product hero")
-    _ok(_has_text(scene,"納品"),"guided village keeps delivery context")
-    _ok(_has_text(scene,"入手先：農場の雪国鶏舎"),"guided village connects request back to production")
+    _ok(_has_text(scene,"いまの手順") or _has_text(scene,"今日の村"),"village visit remains non-blocking during transition to V3")
 
-    print("CURRENT PRODUCT UI CONTRACT COMPLETE failures=",failures)
+    print("CURRENT PRODUCT UI V3 CONTRACT COMPLETE failures=",failures)
     scene.queue_free()
     quit(1 if failures > 0 else 0)
