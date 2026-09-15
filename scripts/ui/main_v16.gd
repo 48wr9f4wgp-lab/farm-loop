@@ -3,7 +3,7 @@ extends "res://scripts/ui/main_v15.gd"
 const FarmScreenClass = preload("res://scripts/ui/screens/farm_screen.gd")
 const B5CurrentRulesClass = preload("res://scripts/core/game_rules_current.gd")
 const B5SfxClass = preload("res://scripts/audio/sfx_player.gd")
-const FtueServiceClass = preload("res://scripts/core/ftue_service.gd")
+const FtueServiceClass = preload("res://scripts/core/ftue_service_v3.gd")
 
 var ftue_service
 var runtime_slot: String = "main"
@@ -35,7 +35,7 @@ func _ready() -> void:
     sfx.set_enabled(bool(state["settings"].get("sound",true)))
     _polish_mobile_shell()
 
-    state["version"] = "godot-1.6-motion-audio"
+    state["version"] = "godot-v3-restore-loop"
     _record_event("session_start",_slice_props({"slot":runtime_slot}))
     if ftue_service.mark_step_started(state):
         _record_event("ftue_step_started",_slice_props({"step":ftue_service.step(state)}))
@@ -54,8 +54,6 @@ func _prepare_current_state() -> void:
     # Recovery is a boot/load concern. During live actions FTUE advances only
     # from the explicit action result, preserving analytics and celebration.
     ftue_service.reconcile(state)
-    if ftue_service.active(state) and ftue_service.step(state) == 7:
-        ftue_service.ensure_starter_request(state)
 
 func _switch_save_slot(slot: String, fresh: bool) -> void:
     runtime_slot = slot
@@ -75,7 +73,7 @@ func _switch_save_slot(slot: String, fresh: bool) -> void:
         state["ui"]["selected_facility"] = "coop"
         state["ui"]["last_tab"] = "farm"
 
-    state["version"] = "godot-1.6-motion-audio"
+    state["version"] = "godot-v3-restore-loop"
     _record_event("session_start",_slice_props({"slot":runtime_slot,"fresh_test":fresh}))
     if ftue_service.mark_step_started(state):
         _record_event("ftue_step_started",_slice_props({"step":ftue_service.step(state)}))
@@ -89,8 +87,9 @@ func _on_start_ftue_test() -> void:
     # Deliberately creates/replaces only the isolated ftue_test slot.
     # The normal farm_loop_save.json is never read, modified or deleted here.
     _switch_save_slot("ftue_test",true)
+    _record_event("restoration_patch_viewed",_slice_props({"patch":"first_patch","stage":0}))
     if feedback != null:
-        feedback.pop("初回体験テスト開始｜通常セーブはそのまま",3)
+        feedback.pop("里山再生テスト開始｜通常セーブはそのまま",3)
 
 func _on_return_main_save() -> void:
     _switch_save_slot("main",false)
@@ -99,7 +98,9 @@ func _on_return_main_save() -> void:
 
 func _next_objective() -> String:
     if ftue_service != null and ftue_service.active(state):
-        return "はじめての里山｜%s" % ftue_service.objective(state)
+        return "はじめての再生｜%s" % ftue_service.objective(state)
+    if state.has("restoration_v3") and int(state["restoration_v3"].get("first_patch_stage",0)) >= 2:
+        return "次の目標：もう1ヶ月進めて、里山に何が戻るか見る"
     return super._next_objective()
 
 func _show_tab(tab: String) -> void:
@@ -108,7 +109,6 @@ func _show_tab(tab: String) -> void:
     if ftue_service != null:
         var transition: Dictionary = ftue_service.on_tab(state,tab)
         if bool(transition.get("advanced",false)):
-            _record_event("village_request_viewed",_slice_props({"step":int(transition.get("from_step",7))}))
             _apply_ftue_transition(transition)
 
     if content == null or not is_node_ready():
@@ -142,13 +142,14 @@ func _refresh_selected_panel() -> void:
     elif guided_step == 5:
         allowed_primary = "sansai"
 
-    # Players may inspect every facility, but only the current guided action can
-    # consume readiness/resources. This removes off-sequence FTUE deadlocks.
+    # Players may inspect every facility, but only the current restore-loop
+    # action can consume readiness/resources. This prevents proof-slice deadlocks.
     if selected_facility != allowed_primary:
         selected_action_button.disabled = true
         if quick_ready_label != null:
             quick_ready_label.text = "今は別の手順"
     elif quick_ready_label != null:
+        selected_action_button.disabled = false if guided_step in [0,2,5] else selected_action_button.disabled
         quick_ready_label.text = "作業OK" if not selected_action_button.disabled else "完了"
 
     if quick_secondary_button != null:
@@ -156,20 +157,22 @@ func _refresh_selected_panel() -> void:
         quick_secondary_button.visible = can_return_compost
         quick_secondary_button.disabled = not can_return_compost
         if can_return_compost and quick_ready_label != null:
-            quick_ready_label.text = "堆肥を還元"
+            quick_ready_label.text = "土へ還す"
+            quick_secondary_button.text = "完成堆肥を土へ還して里山を蘇らせる"
 
 func _commit(result: Dictionary, return_tab: String, facility: String = "") -> void:
     var ok: bool = bool(result.get("ok",false))
     var kind: String = str(result.get("feedback","work"))
     var transition: Dictionary = {"advanced":false}
+    var from_step: int = ftue_service.step(state) if ftue_service != null and ftue_service.active(state) else -1
     if ftue_service != null:
         transition = ftue_service.on_action(state,kind,facility,result)
 
     if ok:
-        _record_slice_action(result,kind,facility)
+        _record_slice_action(result,kind,facility,from_step)
 
-    # Preserve mature product feedback/daily/chain behavior while FTUE is now
-    # orchestrated by the current service above.
+    # Preserve mature product feedback/daily/chain behavior while V3 proof is
+    # orchestrated by the focused restoration service above.
     super._commit(result,return_tab,facility)
 
     if bool(transition.get("advanced",false)):
@@ -184,11 +187,14 @@ func _apply_ftue_transition(transition: Dictionary) -> void:
         "step_elapsed_seconds":float(transition.get("step_elapsed_seconds",0.0))
     }))
 
+    if from_step == 4:
+        _record_event("restoration_payoff_viewed",_slice_props({"patch":"first_patch","stage":1}))
     if bool(transition.get("completed",false)):
         _record_event("ftue_complete",_slice_props({"step":from_step}))
         _record_event("full_loop_complete",_slice_props())
+        _record_event("restoration_payoff_viewed",_slice_props({"patch":"first_patch","stage":2}))
         if feedback != null:
-            feedback.pop("はじめての里山 完成！ ここからは自由に育てよう",5)
+            feedback.pop("最初の里山が蘇った！ 次の月には何が戻る？",5)
             feedback.fly_tokens("major",12)
         if sfx != null:
             sfx.play_kind("major",5)
@@ -198,7 +204,7 @@ func _apply_ftue_transition(transition: Dictionary) -> void:
     save_service.save(state)
     _header()
 
-func _record_slice_action(result: Dictionary, kind: String, facility: String) -> void:
+func _record_slice_action(result: Dictionary, kind: String, facility: String, from_step: int = -1) -> void:
     var route: String = str(result.get("route",""))
     if facility == "coop" and kind == "collect":
         if not bool(state["analytics"].get("first_facility_action_recorded",false)):
@@ -211,11 +217,18 @@ func _record_slice_action(result: Dictionary, kind: String, facility: String) ->
         _record_event("compost_create",_slice_props({"facility":"compost"}))
     elif kind in ["month","hazard"]:
         _record_event("month_advance",_slice_props())
+        if ftue_service != null and not ftue_service.active(state) and bool(state.get("restoration_v3",{}).get("proof_mode",false)) and not bool(state["restoration_v3"].get("next_month_voluntary_recorded",false)):
+            state["restoration_v3"]["next_month_voluntary_recorded"] = true
+            _record_event("next_month_voluntary",_slice_props())
     elif facility == "sansai" and kind == "loop":
         _record_event("compost_use",_slice_props({"facility":"sansai"}))
+        if from_step == 4:
+            _record_event("restoration_started",_slice_props({"patch":"first_patch"}))
+            _record_event("restoration_completed",_slice_props({"patch":"first_patch","stage":1}))
     elif facility == "sansai" and kind == "collect":
         _record_event("sansai_harvest",_slice_props({"facility":"sansai"}))
     elif facility == "mountain" and not route.is_empty():
+        # Legacy free-play telemetry. Mountain routes are not V3 proof-gate beats.
         _record_event("mountain_route_selected",_slice_props({"route":route}))
         _record_event("mountain_result",_slice_props({
             "route":route,
@@ -223,6 +236,7 @@ func _record_slice_action(result: Dictionary, kind: String, facility: String) ->
             "find":str(result.get("find",""))
         }))
     elif kind == "sell":
+        # Legacy free-play telemetry. Selling is secondary in the V3 proof slice.
         _record_event("market_sell",_slice_props({"channel":selected_channel}))
 
 func _slice_props(extra: Dictionary = {}) -> Dictionary:
