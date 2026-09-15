@@ -5,6 +5,11 @@ const GREEN_DARK := Color("#234c36")
 const MUTED := Color("#6d786f")
 
 func build(host) -> void:
+    var proof_mode: bool = bool(host.state.get("restoration_v3",{}).get("proof_mode",false))
+    if proof_mode:
+        _build_proof_mode(host)
+        return
+
     var total_items: int = host._sellable_stock()
     var best_id: String = host.rules.best_channel(host.state)
     var channels: Dictionary = host.data.get_table("channels")
@@ -92,9 +97,14 @@ func build(host) -> void:
         var item_value: int = host.rules.preview_price(host.state,key,host.selected_channel) * count
         var item_button: Button = host._button("%s ×%d　約¥%d" % [str(product["name"]),count,item_value],Callable(host,"_on_sell").bind(key),false,true)
         item_button.custom_minimum_size.y = 46
-        # Guided session deliberately ends on one satisfying basket sale rather
-        # than letting one-by-one sales erase the payoff or consume key items.
         item_button.disabled = guided
         basket.add_child(item_button)
     if not found:
         basket.add_child(host._lead_text("まだ出荷できる品はない。"))
+
+func _build_proof_mode(host) -> void:
+    var focus: VBoxContainer = host._section("今は里山を蘇らせる")
+    focus.add_child(host._lead_text("販売はVertical Slice 3の証明対象から外した。まずは資源を土へ戻し、土地が変わる気持ちよさを完成させる。"))
+    var go: Button = host._button("農場へ戻る",Callable(host,"_show_tab").bind("farm"),true,false)
+    go.custom_minimum_size.y = 54
+    focus.add_child(go)
