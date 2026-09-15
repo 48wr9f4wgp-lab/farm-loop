@@ -1,6 +1,6 @@
 extends SceneTree
 
-const DioramaClass = preload("res://scripts/ui/farm_diorama_v1.gd")
+const DioramaClass = preload("res://scripts/ui/farm_diorama_v2.gd")
 
 var failures: int = 0
 
@@ -76,7 +76,9 @@ func _init() -> void:
 
     var farm_map = scene.get("map")
     _ok(farm_map != null and bool(farm_map.get("is_3d_diorama")),"runtime farm screen uses 3D diorama renderer")
+    if farm_map != null:
+        _ok(str(farm_map.get_script().resource_path).ends_with("farm_diorama_v2.gd"),"runtime uses warning-free diorama v2")
 
-    print("3D DIORAMA CONTRACT COMPLETE failures=",failures)
+    print("3D DIORAMA V2 CONTRACT COMPLETE failures=",failures)
     scene.queue_free()
     quit(1 if failures > 0 else 0)
