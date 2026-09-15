@@ -21,20 +21,24 @@ func build(host) -> void:
 
     var guided: bool = host.ftue_service != null and host.ftue_service.active(host.state)
     var guided_step: int = host.ftue_service.step(host.state) if guided else -1
+    var proof_mode: bool = bool(host.state.get("restoration_v3",{}).get("proof_mode",false))
 
-    # V3 keeps the environment as the hero. Administrative summaries stay out
-    # of the first restore loop; one small restoration readout explains what
-    # changed without turning the map into a dashboard.
+    # In the active V3 proof, the farm screen stays about one promise: return
+    # resources to the soil and watch the satoyama recover. Legacy metas remain
+    # available only when proof_mode is explicitly disabled.
     if guided:
         _build_restore_status(host)
         if guided_step == 3:
-            _build_circulation(host)
+            _build_circulation(host,true)
+    elif proof_mode:
+        _build_restore_status(host)
+        _build_circulation(host,true)
     else:
         _build_restore_status(host)
         _build_notebook(host)
         _build_mountain(host)
         _build_chain(host)
-        _build_circulation(host)
+        _build_circulation(host,false)
         _build_stock(host)
     host._refresh_selected_panel()
 
@@ -213,13 +217,19 @@ func _build_chain(host) -> void:
     bar.custom_minimum_size = Vector2(0,12)
     chain.add_child(bar)
 
-func _build_circulation(host) -> void:
-    var loop: VBoxContainer = host._section("循環ループ")
+func _build_circulation(host, focused: bool = false) -> void:
+    var loop: VBoxContainer = host._section("循環") if focused else host._section("循環ループ")
     var label := Label.new()
-    label.text = "鶏糞 %d　堆肥 %d　落ち葉/籾殻 %d　受粉 %d" % [
-        int(host.state["inventory"]["manure"]),int(host.state["inventory"]["compost"]),
-        int(host.state["inventory"]["leaves"]),int(host.state["buffs"]["pollination"])
-    ]
+    if focused:
+        label.text = "鶏糞 %d　堆肥 %d　落ち葉/籾殻 %d\n資源を土へ戻し、次の月の変化につなげる" % [
+            int(host.state["inventory"]["manure"]),int(host.state["inventory"]["compost"]),int(host.state["inventory"]["leaves"])
+        ]
+    else:
+        label.text = "鶏糞 %d　堆肥 %d　落ち葉/籾殻 %d　受粉 %d" % [
+            int(host.state["inventory"]["manure"]),int(host.state["inventory"]["compost"]),
+            int(host.state["inventory"]["leaves"]),int(host.state["buffs"]["pollination"])
+        ]
+    label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     loop.add_child(label)
     var progress := ProgressBar.new()
     progress.max_value = 100
@@ -227,7 +237,8 @@ func _build_circulation(host) -> void:
     progress.show_percentage = false
     progress.custom_minimum_size = Vector2(0,13)
     loop.add_child(progress)
-    var next_month: Button = host._button("今月を終える",Callable(host,"_on_next_month"),false,false)
+    var next_month: Button = host._button("次の月を見る" if focused else "今月を終える",Callable(host,"_on_next_month"),focused,false)
+    next_month.custom_minimum_size.y = 54 if focused else next_month.custom_minimum_size.y
     loop.add_child(next_month)
 
 func _build_stock(host) -> void:
