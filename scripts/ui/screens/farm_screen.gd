@@ -1,11 +1,7 @@
 class_name FarmScreen
 extends RefCounted
 
-const FarmMapV09Class = preload("res://scripts/ui/farm_map_v09.gd")
-const ProductMapOverlayV09Class = preload("res://scripts/ui/product_map_overlay_v09.gd")
-const RestorationPatchOverlayV3Class = preload("res://scripts/ui/restoration_patch_overlay_v3.gd")
-const FarmPolishOverlayV15Class = preload("res://scripts/ui/farm_polish_overlay_v15.gd")
-const FacilityActionOverlayV16Class = preload("res://scripts/ui/facility_action_overlay_v16.gd")
+const FarmDioramaV1Class = preload("res://scripts/ui/farm_diorama_v1.gd")
 
 const GREEN := Color("#356b4c")
 const GREEN_DARK := Color("#234c36")
@@ -16,20 +12,26 @@ const GOLD := Color("#b78332")
 func build(host) -> void:
     host.rules.ensure_product_fields(host.state)
     host.rules.ensure_entertainment_fields(host.state)
-    _build_quick_action(host)
-    _build_map(host)
 
     var guided: bool = host.ftue_service != null and host.ftue_service.active(host.state)
     var guided_step: int = host.ftue_service.step(host.state) if guided else -1
     var proof_mode: bool = bool(host.state.get("restoration_v3",{}).get("proof_mode",false))
+
+    # Step 4 used to place the month button below the hero map, which could make
+    # the objective visible while the required CTA was off-screen. The month
+    # gate now replaces the facility card and is always above the 3D diorama.
+    if guided and guided_step == 3:
+        _build_month_gate(host)
+    else:
+        _build_quick_action(host)
+
+    _build_map(host)
 
     # In the active V3 proof, the farm screen stays about one promise: return
     # resources to the soil and watch the satoyama recover. Legacy metas remain
     # available only when proof_mode is explicitly disabled.
     if guided:
         _build_restore_status(host)
-        if guided_step == 3:
-            _build_circulation(host,true)
     elif proof_mode:
         _build_restore_status(host)
         _build_circulation(host,true)
@@ -40,7 +42,42 @@ func build(host) -> void:
         _build_chain(host)
         _build_circulation(host,false)
         _build_stock(host)
-    host._refresh_selected_panel()
+
+    if not (guided and guided_step == 3):
+        host._refresh_selected_panel()
+
+func _build_month_gate(host) -> void:
+    var panel := PanelContainer.new()
+    var style: StyleBoxFlat = host._panel_style(Color("#fffaf0"),15)
+    style.content_margin_top = 11
+    style.content_margin_bottom = 11
+    style.content_margin_left = 12
+    style.content_margin_right = 12
+    style.shadow_size = 2
+    panel.add_theme_stylebox_override("panel",style)
+    host.content.add_child(panel)
+
+    var box := VBoxContainer.new()
+    box.add_theme_constant_override("separation",6)
+    panel.add_child(box)
+
+    var title := Label.new()
+    title.text = "堆肥を熟成させる"
+    title.add_theme_font_size_override("font_size",16)
+    title.add_theme_color_override("font_color",GREEN_DARK)
+    box.add_child(title)
+
+    var lead := Label.new()
+    lead.text = "仕込んだ堆肥は、月を進めると完成する。"
+    lead.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    lead.add_theme_font_size_override("font_size",11)
+    lead.add_theme_color_override("font_color",MUTED)
+    box.add_child(lead)
+
+    var next_month: Button = host._button("今月を終える｜堆肥を完成させる",Callable(host,"_on_next_month"),true,false)
+    next_month.custom_minimum_size.y = 58
+    next_month.add_theme_font_size_override("font_size",15)
+    box.add_child(next_month)
 
 func _build_quick_action(host) -> void:
     var panel := PanelContainer.new()
@@ -90,9 +127,9 @@ func _build_quick_action(host) -> void:
     box.add_child(host.quick_secondary_button)
 
 func _build_map(host) -> void:
-    var farm_map = FarmMapV09Class.new()
+    var farm_map = FarmDioramaV1Class.new()
     var viewport_h: float = host.get_viewport_rect().size.y
-    farm_map.custom_minimum_size = Vector2(0,clampf(viewport_h * 0.44,385.0,420.0))
+    farm_map.custom_minimum_size = Vector2(0,clampf(viewport_h * 0.50,420.0,485.0))
     farm_map.set_state(
         host.rules.season_key(int(host.state["month"])),
         str(host.state["weather"]),
@@ -100,42 +137,14 @@ func _build_map(host) -> void:
         host.selected_facility,
         bool(host.state["settings"].get("reduced_motion",false))
     )
-    farm_map.player_pos = Vector2(0.50,0.84)
-    farm_map.target_pos = farm_map.player_pos
+    var restore_stage: int = int(host.state.get("restoration_v3",{}).get("first_patch_stage",0))
+    if host.ftue_service != null and host.ftue_service.has_method("restoration_stage"):
+        restore_stage = int(host.ftue_service.restoration_stage(host.state))
+    farm_map.set_restoration_stage(restore_stage)
     farm_map.facility_selected.connect(Callable(host,"_on_map_select"))
     farm_map.player_arrived.connect(Callable(host,"_on_map_arrive"))
     host.content.add_child(farm_map)
     host.map = farm_map
-
-    var restore_stage: int = int(host.state.get("restoration_v3",{}).get("first_patch_stage",0))
-    if host.ftue_service != null and host.ftue_service.has_method("restoration_stage"):
-        restore_stage = int(host.ftue_service.restoration_stage(host.state))
-    var restoration = RestorationPatchOverlayV3Class.new()
-    restoration.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-    restoration.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    restoration.set_restore_state(restore_stage,bool(host.state["settings"].get("reduced_motion",false)))
-    farm_map.add_child(restoration)
-
-    var progress: Dictionary = host.rules.land_progress(host.state)
-    var art = ProductMapOverlayV09Class.new()
-    art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-    art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    art.set_product_state(
-        host.rules.season_key(int(host.state["month"])),
-        int(progress["rank"]),
-        bool(host.state["settings"].get("reduced_motion",false))
-    )
-    farm_map.add_child(art)
-
-    var guidance = FarmPolishOverlayV15Class.new()
-    guidance.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-    guidance.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    farm_map.add_child(guidance)
-
-    var action_fx = FacilityActionOverlayV16Class.new()
-    action_fx.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-    action_fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    farm_map.add_child(action_fx)
 
 func _build_restore_status(host) -> void:
     var stage: int = int(host.state.get("restoration_v3",{}).get("first_patch_stage",0))
