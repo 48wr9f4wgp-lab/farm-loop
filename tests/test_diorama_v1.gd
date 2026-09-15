@@ -1,6 +1,6 @@
 extends SceneTree
 
-const DioramaClass = preload("res://scripts/ui/farm_diorama_v11.gd")
+const DioramaClass = preload("res://scripts/ui/farm_diorama_v12.gd")
 
 var failures: int = 0
 
@@ -31,8 +31,8 @@ func _init() -> void:
     await process_frame
 
     _ok(bool(diorama.get("is_3d_diorama")),"farm renderer identifies as 3D diorama")
-    _ok(int(diorama.get("visual_pass")) == 9,"runtime renderer declares visual pass 9")
-    _ok(str(diorama.get("visual_target_id")) == "satoyama-premium-2026-09-15-v9","renderer is locked to guided-input visual target")
+    _ok(int(diorama.get("visual_pass")) == 10,"runtime renderer declares visual pass 10")
+    _ok(str(diorama.get("visual_target_id")) == "satoyama-premium-2026-09-15-v10","renderer is locked to premium satoyama visual target")
     _ok(diorama.get("viewport_3d") is SubViewport,"3D diorama owns a SubViewport")
     var camera = diorama.get("camera")
     _ok(camera is Camera3D,"3D diorama owns a Camera3D")
@@ -43,11 +43,26 @@ func _init() -> void:
     var facilities: Dictionary = diorama.get("facility_nodes")
     _ok(facilities.has("coop") and facilities.has("compost") and facilities.has("sansai") and facilities.has("mushroom") and facilities.has("bee"),"all identity facilities exist in 3D")
     var world_root = diorama.get("world_root")
-    _ok(world_root != null and world_root.name == "SatoyamaDioramaV11","V11 world root is active")
-    _ok(world_root != null and world_root.get_node_or_null("GuidedInteractionLockMarker") != null,"guided interaction lock marker is active")
+    _ok(world_root != null and world_root.name == "SatoyamaDioramaV12","V12 world root is active")
+    _ok(world_root != null and world_root.get_node_or_null("GuidedInteractionLockMarker") != null,"guided interaction lock remains active")
+    _ok(world_root != null and world_root.get_node_or_null("PremiumDetailLayerV12") != null,"premium satoyama world detail layer is active")
+
+    if facilities.has("coop"):
+        _ok(facilities["coop"].get_node_or_null("PremiumCoopV12") != null,"coop has premium rural detail")
+    if facilities.has("compost"):
+        _ok(facilities["compost"].get_node_or_null("PremiumCompostV12") != null,"compost shed has premium working detail")
+    if facilities.has("mushroom"):
+        _ok(facilities["mushroom"].get_node_or_null("PremiumMushroomV12") != null,"mushroom area has premium shade-rack detail")
+    if facilities.has("bee"):
+        _ok(facilities["bee"].get_node_or_null("PremiumBeeV12") != null,"bee area has premium hive and flower detail")
+
     var restore_root = diorama.get("restore_root")
     _ok(restore_root != null and restore_root.get_node_or_null("GuidedRestoreFocus") != null,"guided restoration keeps world-space focus treatment")
     _ok(restore_root != null and restore_root.get_node_or_null("RestorationHierarchyV10") != null,"restoration patch keeps authored visual hierarchy treatment")
+    _ok(restore_root != null and restore_root.get_node_or_null("RestorationPayoffV12") != null,"restoration patch has stronger before-after payoff treatment")
+    var premium_motion_nodes: Array = diorama.get("premium_motion_nodes")
+    _ok(premium_motion_nodes.size() >= 5,"premium pass includes restrained environmental motion")
+
     var ready_markers: Dictionary = diorama.get("ready_markers")
     if ready_markers.has("sansai"):
         _ok(bool(ready_markers["sansai"].visible),"guided restoration keeps target marker visible")
@@ -127,7 +142,7 @@ func _init() -> void:
     var focused_map = scene.get("map")
     _ok(focused_map != null and str(focused_map.get("guided_focus")) == "sansai","FTUE step 5 focuses restoration patch")
     if focused_map != null:
-        _ok(str(focused_map.get_script().resource_path).ends_with("farm_diorama_v11.gd"),"runtime uses guided-lock diorama v11")
+        _ok(str(focused_map.get_script().resource_path).ends_with("farm_diorama_v12.gd"),"runtime uses premium satoyama diorama v12")
         _ok(focused_map.custom_minimum_size.y <= 500.0,"hero height preserves portrait horizontal framing")
         var runtime_camera = focused_map.get("camera")
         if runtime_camera is Camera3D:
@@ -140,6 +155,6 @@ func _init() -> void:
         _ok(int(state["ftue_v3"]["step"]) == 5,"restore CTA advances Restore Loop FTUE")
         _ok(int(state["restoration_v3"].get("first_patch_stage",0)) >= 1,"restore CTA advances land restoration")
 
-    print("3D DIORAMA V11 GUIDED INPUT CONTRACT COMPLETE failures=",failures)
+    print("3D DIORAMA V12 PREMIUM SAToyama CONTRACT COMPLETE failures=",failures)
     scene.queue_free()
     quit(1 if failures > 0 else 0)
