@@ -19,12 +19,12 @@ func _count_exact_labels(root_node: Node, target: String) -> int:
 
 func _init() -> void:
     var packed := load("res://main.tscn") as PackedScene
-    _ok(packed != null,"v0.9 main scene loads")
+    _ok(packed != null,"current main scene loads")
     if packed == null:
         quit(1)
         return
     var scene := packed.instantiate()
-    _ok(scene != null,"v0.9 main scene instantiates")
+    _ok(scene != null,"current main scene instantiates")
     if scene == null:
         quit(1)
         return
@@ -39,8 +39,9 @@ func _init() -> void:
     var map_value = scene.get("map")
     _ok(map_value != null,"farm map exists")
     if map_value != null:
-        _ok(str(map_value.get_script().resource_path).ends_with("farm_map_v09.gd"),"asset-first farm map active")
-        _ok(map_value.get_child_count() > 0,"farm map has product art overlay")
+        _ok(bool(map_value.get("is_3d_diorama")),"3D diorama farm map active")
+        _ok(map_value.get("viewport_3d") is SubViewport,"farm hero owns 3D viewport")
+        _ok(map_value.get("camera") is Camera3D,"farm hero owns 3D camera")
 
     _ok(_count_exact_labels(scene,"今いる場所") == 0,"legacy duplicate location card removed")
     var selected_button = scene.get("selected_action_button")
@@ -48,6 +49,6 @@ func _init() -> void:
     if selected_button is Button:
         _ok(selected_button.custom_minimum_size.y >= 50.0,"primary action keeps mobile tap target")
 
-    print("V0.9 PRODUCT UI TESTS COMPLETE failures=",failures)
+    print("3D PRODUCT UI CONTRACT COMPLETE failures=",failures)
     scene.queue_free()
     quit(1 if failures > 0 else 0)
