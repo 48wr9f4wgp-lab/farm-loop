@@ -8,6 +8,16 @@ extends "res://scripts/ui/farm_diorama_v3.gd"
 var visual_pass: int = 2
 var visual_target_id: String = "satoyama-premium-2026-09-15"
 
+func _ready() -> void:
+    mouse_filter = Control.MOUSE_FILTER_STOP
+    # The legacy renderer manually tracks the viewport size. Keep stretch off
+    # so that inherited resize notifications are valid instead of warning.
+    stretch = false
+    _build_viewport()
+    _build_world()
+    _sync_visual_state()
+    set_process(true)
+
 func _build_world() -> void:
     world_root = Node3D.new()
     world_root.name = "SatoyamaDioramaV4"
@@ -136,6 +146,25 @@ func _grass_clump(pos: Vector3, seed_value: int) -> void:
         var h := 0.15 + float((seed_value+i)%3)*0.025
         var stem := _cylinder_child(root,Vector3(x,h*0.5,0.02*float(i%2)),0.012,h,Color("#527d49"),5)
         stem.rotation_degrees.z = -8.0 + float(i)*8.0
+
+func _sync_visual_state() -> void:
+    # Reuse readiness / selection / restoration behavior, then re-apply the
+    # premium lighting and palette. The legacy method intentionally changes
+    # sun energy, which was the reason V3 still washed out after state sync.
+    super._sync_visual_state()
+    if sun != null:
+        sun.light_energy = 0.62 if weather in ["雪","雨"] else 0.88
+
+    var ground = world_root.get_node_or_null("Ground") as MeshInstance3D if world_root != null else null
+    if ground != null:
+        var c := V3_GRASS
+        if season == "summer":
+            c = Color("#668e50")
+        elif season == "autumn":
+            c = Color("#88794b")
+        elif season == "winter":
+            c = Color("#c8d5d0")
+        ground.material_override = _material(c)
 
 func _material(color: Color) -> StandardMaterial3D:
     var material := StandardMaterial3D.new()
