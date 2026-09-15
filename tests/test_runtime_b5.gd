@@ -33,9 +33,11 @@ func _init() -> void:
     _ok(state is Dictionary,"runtime state exists")
     if state is Dictionary:
         _ok(int(state.get("schema_version",0)) == 4,"runtime uses current save schema")
-        _ok(str(state.get("version","")) == "godot-1.6-motion-audio","runtime stamps current release metadata")
+        _ok(str(state.get("version","")) == "godot-v3-restore-loop","runtime stamps Restore Loop v3 metadata")
+        _ok(state.has("ftue_v3"),"runtime initializes FTUE v3 state")
+        _ok(state.has("restoration_v3"),"runtime initializes explicit restoration state")
         _ok(state.has("daily"),"current product fields initialized")
-        _ok(state.has("entertainment") and state["entertainment"].has("route_counts"),"current route fields initialized")
+        _ok(state.has("entertainment") and state["entertainment"].has("route_counts"),"legacy route fields remain initialized for rollback")
 
     var sfx = scene.get("sfx")
     _ok(sfx != null,"audio runtime initialized once")
@@ -46,6 +48,6 @@ func _init() -> void:
         await process_frame
         _ok(scene.get("content") != null and scene.get("content").get_child_count() > 0,"screen renders from current runtime: " + tab)
 
-    print("B5 CURRENT RUNTIME CONTRACT COMPLETE failures=",failures)
+    print("B5 CURRENT RUNTIME V3 CONTRACT COMPLETE failures=",failures)
     scene.queue_free()
     quit(1 if failures > 0 else 0)
