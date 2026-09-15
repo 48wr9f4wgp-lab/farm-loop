@@ -9,20 +9,30 @@ const MUTED := Color("#6d786f")
 func build(host) -> void:
     var guided: bool = host.ftue_service != null and host.ftue_service.active(host.state)
     var guided_step: int = host.ftue_service.step(host.state) if guided else -1
+    var proof_mode: bool = bool(host.state.get("restoration_v3",{}).get("proof_mode",false))
+
+    # V3 removes Village from the proof loop. Keep settings and the isolated
+    # FTUE-test controls reachable, but do not let relationships/requests steal
+    # attention from restoration.
+    if proof_mode:
+        if guided:
+            _build_guided_redirect(host,guided_step)
+        else:
+            _build_proof_mode(host)
+        _build_settings(host)
+        _build_dev_test(host)
+        return
 
     if guided and guided_step != 7:
         _build_guided_redirect(host,guided_step)
         return
 
-    if guided_step == 7 and host.ftue_service != null:
+    if guided_step == 7 and host.ftue_service != null and host.ftue_service.has_method("ensure_starter_request"):
         host.ftue_service.ensure_starter_request(host.state)
     elif host.state["village_requests"].is_empty():
         host.rules.ensure_requests(host.state)
 
     _build_request_hero(host,guided)
-
-    # The proof-of-fun village beat only needs to answer one question:
-    # "Who am I growing this for?" Relationship management returns afterwards.
     if guided:
         return
 
@@ -51,33 +61,21 @@ func build(host) -> void:
             names.append(str(host.data.get_table("products")[key]["name"]))
     codex.add_child(host._lead_text("登録 %d種｜%s" % [host.state["discovered"].size(),"・".join(names)]))
 
-    var settings: VBoxContainer = host._section("設定")
-    var settings_row := HBoxContainer.new()
-    settings_row.add_theme_constant_override("separation",5)
-    settings.add_child(settings_row)
-    var haptic: Button = host._button("触覚 %s" % ("ON" if bool(host.state["settings"]["haptics"]) else "OFF"),Callable(host,"_toggle_haptics"),false,true)
-    var motion: Button = host._button("演出軽減 %s" % ("ON" if bool(host.state["settings"]["reduced_motion"]) else "OFF"),Callable(host,"_toggle_motion"),false,true)
-    haptic.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    motion.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    settings_row.add_child(haptic)
-    settings_row.add_child(motion)
-    if host.state["settings"].has("sound"):
-        var sound: Button = host._button("効果音 %s" % ("ON" if bool(host.state["settings"].get("sound",true)) else "OFF"),Callable(host,"_toggle_sound"),false,true)
-        settings.add_child(sound)
-
+    _build_settings(host)
     _build_dev_test(host)
 
-func _build_guided_redirect(host, guided_step: int) -> void:
+func _build_proof_mode(host) -> void:
+    var focus: VBoxContainer = host._section("今は里山の再生に集中")
+    focus.add_child(host._lead_text("村人関係・依頼はVertical Slice 3から外した。まずは土地が蘇り、次の季節を見たくなる体験を証明する。"))
+    var go: Button = host._button("農場へ戻る",Callable(host,"_show_tab").bind("farm"),true,false)
+    go.custom_minimum_size.y = 54
+    focus.add_child(go)
+
+func _build_guided_redirect(host, _guided_step: int) -> void:
     var guide: VBoxContainer = host._section("いまの手順")
     guide.add_child(host._lead_text(host.ftue_service.objective(host.state)))
-    var target_tab: String = "farm"
-    var label_text: String = "農場へ戻る"
-    if guided_step in [1,6]:
-        target_tab = "work"
-        label_text = "仕事へ行く"
-    elif guided_step >= 8:
-        target_tab = "market"
-        label_text = "販売へ行く"
+    var target_tab: String = "work" if host.ftue_service.step(host.state) == 1 else "farm"
+    var label_text: String = "仕事へ行く" if target_tab == "work" else "農場へ戻る"
     var go: Button = host._button(label_text,Callable(host,"_show_tab").bind(target_tab),true,false)
     go.custom_minimum_size.y = 54
     guide.add_child(go)
@@ -127,6 +125,21 @@ func _build_request_hero(host, guided: bool) -> void:
         for request in host.state["village_requests"]:
             hero.add_child(_request_card(host,request))
 
+func _build_settings(host) -> void:
+    var settings: VBoxContainer = host._section("設定")
+    var settings_row := HBoxContainer.new()
+    settings_row.add_theme_constant_override("separation",5)
+    settings.add_child(settings_row)
+    var haptic: Button = host._button("触覚 %s" % ("ON" if bool(host.state["settings"]["haptics"]) else "OFF"),Callable(host,"_toggle_haptics"),false,true)
+    var motion: Button = host._button("演出軽減 %s" % ("ON" if bool(host.state["settings"]["reduced_motion"]) else "OFF"),Callable(host,"_toggle_motion"),false,true)
+    haptic.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    motion.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    settings_row.add_child(haptic)
+    settings_row.add_child(motion)
+    if host.state["settings"].has("sound"):
+        var sound: Button = host._button("効果音 %s" % ("ON" if bool(host.state["settings"].get("sound",true)) else "OFF"),Callable(host,"_toggle_sound"),false,true)
+        settings.add_child(sound)
+
 func _build_dev_test(host) -> void:
     var dev: VBoxContainer = host._section("開発テスト")
     if str(host.runtime_slot) == "ftue_test":
@@ -136,7 +149,7 @@ func _build_dev_test(host) -> void:
         var back: Button = host._button("通常セーブへ戻る",Callable(host,"_on_return_main_save"),true,false)
         dev.add_child(back)
     else:
-        dev.add_child(host._lead_text("通常セーブを残したまま、初回15分だけ新規状態で試せる。テスト枠の進行は別ファイルに保存される。"))
+        dev.add_child(host._lead_text("通常セーブを残したまま、Restore Loop V3だけ新規状態で試せる。テスト枠の進行は別ファイルに保存される。"))
         var start: Button = host._button("初回体験を最初から試す",Callable(host,"_on_start_ftue_test"),true,false)
         start.custom_minimum_size.y = 54
         dev.add_child(start)
