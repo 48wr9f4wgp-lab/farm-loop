@@ -17,6 +17,15 @@ func _count_exact_labels(root_node: Node, target: String) -> int:
         count += _count_exact_labels(child,target)
     return count
 
+func _find_named(root_node: Node, target: String) -> Node:
+    if str(root_node.name) == target:
+        return root_node
+    for child in root_node.get_children():
+        var found := _find_named(child,target)
+        if found != null:
+            return found
+    return null
+
 func _init() -> void:
     var packed := load("res://main.tscn") as PackedScene
     _ok(packed != null,"current main scene loads")
@@ -42,13 +51,16 @@ func _init() -> void:
         _ok(bool(map_value.get("is_3d_diorama")),"3D diorama farm map active")
         _ok(map_value.get("viewport_3d") is SubViewport,"farm hero owns 3D viewport")
         _ok(map_value.get("camera") is Camera3D,"farm hero owns 3D camera")
+        _ok(str(map_value.get_script().resource_path).ends_with("circulation_board_v4.gd"),"V4 direct-world interaction layer is active")
 
     _ok(_count_exact_labels(scene,"今いる場所") == 0,"legacy duplicate location card removed")
     var selected_button = scene.get("selected_action_button")
-    _ok(selected_button is Button,"primary facility action exists")
-    if selected_button is Button:
-        _ok(selected_button.custom_minimum_size.y >= 50.0,"primary action keeps mobile tap target")
+    _ok(selected_button == null or not (selected_button is Button and selected_button.visible),"legacy primary facility CTA is absent from V4 default state")
+    _ok(_find_named(scene,"V4InterventionTray") == null,"context tray stays hidden until player selects land")
+    _ok(_find_named(scene,"V4RecoveryLabel") != null,"V4 compact recovery status is visible")
+    _ok(_find_named(scene,"V4ActionPointsLabel") != null,"V4 monthly action budget is visible")
 
-    print("3D PRODUCT UI CONTRACT COMPLETE failures=",failures)
+    print("3D PRODUCT UI V4 CONTRACT COMPLETE failures=",failures)
     scene.queue_free()
+    await process_frame
     quit(1 if failures > 0 else 0)
