@@ -1,0 +1,29 @@
+name: Farm Loop V4 Core
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.7.2"
+
+jobs:
+  circulation-rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          use-dotnet: false
+          include-templates: false
+      - name: Verify Godot
+        run: godot --version
+      - name: Import scripts
+        run: godot --headless --path . --import
+      - name: Circulation rules V4
+        run: timeout 30s godot --headless --path . --script tests/test_circulation_rules_v4.gd
