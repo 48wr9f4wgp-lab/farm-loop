@@ -19,6 +19,15 @@ func _has_text(root_node: Node, target: String) -> bool:
             return true
     return false
 
+func _find_named(root_node: Node, target: String) -> Node:
+    if str(root_node.name) == target:
+        return root_node
+    for child in root_node.get_children():
+        var found := _find_named(child,target)
+        if found != null:
+            return found
+    return null
+
 func _init() -> void:
     var packed := load("res://main.tscn") as PackedScene
     _ok(packed != null,"current main scene loads")
@@ -39,54 +48,53 @@ func _init() -> void:
     _ok(root_box != null,"product shell exists")
     if root_box != null and root_box.get_child_count() > 2:
         var secondary = root_box.get_child(2)
-        _ok(not secondary.visible,"secondary metric row removed from hero")
+        _ok(not secondary.visible,"legacy secondary metric row remains suppressed")
 
     _ok(_has_text(scene,"YUKISATO"),"brand metadata visible")
-    var map = scene.get("map")
-    _ok(map != null,"farm map exists")
-    if map != null:
-        _ok(float(map.custom_minimum_size.y) >= 380.0,"farm map remains hero sized")
+    _ok(_has_text(scene,"最初にどこから手を入れる"),"first screen asks for a player decision instead of prescribing a chore")
+    _ok(_has_text(scene,"手入れ 3 / 3"),"monthly three-action budget is immediately visible")
+    _ok(_has_text(scene,"里山回復"),"land recovery remains the primary progression signal")
+    _ok(not _has_text(scene,"はじめての再生"),"old V3 step-by-step tutorial banner is absent from current product UI")
+    _ok(not _has_text(scene,"卵と鶏糞を回収"),"old prescribed first chore is absent from current product UI")
 
-    var desc = scene.get("selected_desc_label")
-    _ok(desc != null and not desc.visible,"facility paragraph hidden from first screen")
+    var map = scene.get("map")
+    _ok(map != null,"V4 ecological board exists")
+    if map != null:
+        _ok(float(map.custom_minimum_size.y) >= 430.0,"3D world remains the dominant hero")
+        _ok(str(map.get_script().resource_path).ends_with("circulation_board_v4.gd"),"current product UI is driven by zone selection")
 
     var runtime_state: Dictionary = scene.get("state")
-    _ok(runtime_state.has("ftue_v3"),"runtime uses FTUE v3 state")
-    _ok(runtime_state.has("restoration_v3"),"runtime has explicit restoration state")
-    runtime_state["ftue_v3"]["step"] = 0
-    runtime_state["ftue_v3"]["active"] = true
-    runtime_state["ftue_v3"]["completed"] = false
-    runtime_state["restoration_v3"]["proof_mode"] = true
+    _ok(runtime_state.has("circulation_v4"),"runtime uses circulation V4 state")
+    _ok(int(runtime_state.get("schema_version",0)) == 5,"current product UI is backed by schema v5")
 
-    # Off-beat visits must redirect instead of exposing unrelated systems.
-    scene.call("_show_tab","work")
-    await process_frame
-    _ok(_has_text(scene,"いまの手順"),"off-beat work tab shows focused guidance")
-    _ok(_has_text(scene,"農場へ戻る"),"off-beat work tab offers direct return CTA")
-    _ok(not _has_text(scene,"今日の山道を選ぶ"),"mountain route choice stays outside V3 proof")
+    var nav_buttons: Dictionary = scene.get("nav_buttons")
+    if nav_buttons.has("work"):
+        _ok(not bool(nav_buttons["work"].visible),"legacy work tab is hidden from V4 proof navigation")
+    if nav_buttons.has("market"):
+        _ok(not bool(nav_buttons["market"].visible),"legacy market tab is hidden from V4 proof navigation")
+    if nav_buttons.has("village"):
+        _ok(not bool(nav_buttons["village"].visible),"legacy village tab is hidden from V4 proof navigation")
+    if nav_buttons.has("farm"):
+        _ok(bool(nav_buttons["farm"].visible) and str(nav_buttons["farm"].text) == "里山","primary navigation is the satoyama board")
+    if nav_buttons.has("settings"):
+        _ok(bool(nav_buttons["settings"].visible),"settings remains reachable")
 
-    runtime_state["ftue_v3"]["step"] = 1
-    scene.call("_show_tab","work")
-    await process_frame
-    _ok(_has_text(scene,"落ち葉・籾殻を集める"),"V3 material beat exposes only restoration input")
-    _ok(not _has_text(scene,"沢沿い") and not _has_text(scene,"尾根"),"material beat has no mountain-route noise")
+    _ok(_find_named(scene,"V4InterventionTray") == null,"no management card competes with the world before selection")
+    if map != null and map.get("camera") is Camera3D:
+        var camera: Camera3D = map.get("camera")
+        var tap := InputEventMouseButton.new()
+        tap.button_index = MOUSE_BUTTON_LEFT
+        tap.pressed = true
+        tap.position = camera.unproject_position(map.zone_world_position("stream") + Vector3(0,0.2,0))
+        map._gui_input(tap)
+        await process_frame
+        await process_frame
+        _ok(_find_named(scene,"V4InterventionTray") != null,"world tap opens contextual management only after a choice")
+        _ok(_has_text(scene,"選択中｜沢"),"context tray identifies the selected land zone")
+        _ok(_has_text(scene,"沢を整える"),"selected stream exposes its valid intervention")
+        _ok(not _has_text(scene,"堆肥を入れる"),"stream tray does not show unrelated intervention")
 
-    runtime_state["ftue_v3"]["step"] = 4
-    runtime_state["restoration_v3"]["first_patch_stage"] = 0
-    scene.call("_show_tab","farm")
-    await process_frame
-    _ok(_has_text(scene,"里山の回復"),"farm surfaces restoration status")
-    _ok(_has_text(scene,"荒れた山菜区画"),"damaged patch state is readable before restoration")
-
-    scene.call("_show_tab","market")
-    await process_frame
-    _ok(_has_text(scene,"今は里山を蘇らせる"),"market is explicitly de-emphasized in V3 proof")
-    _ok(not _has_text(scene,"売り先を選ぶ"),"channel comparison is absent from V3 proof")
-
-    scene.call("_show_tab","village")
-    await process_frame
-    _ok(_has_text(scene,"いまの手順") or _has_text(scene,"今日の村"),"village visit remains non-blocking during transition to V3")
-
-    print("CURRENT PRODUCT UI V3 CONTRACT COMPLETE failures=",failures)
+    print("CURRENT PRODUCT UI V4 CONTRACT COMPLETE failures=",failures)
     scene.queue_free()
+    await process_frame
     quit(1 if failures > 0 else 0)
