@@ -21,7 +21,7 @@ func _init() -> void:
     await process_frame
     await process_frame
 
-    _ok(str(scene.get_script().resource_path).ends_with("main_v31.gd"),"runtime is V4 circulation shell")
+    _ok(str(scene.get_script().resource_path).ends_with("main_v32.gd"),"runtime is V4 M5 circulation shell")
 
     var rules = scene.get("rules")
     _ok(rules != null,"legacy runtime rules remain available")
@@ -35,7 +35,7 @@ func _init() -> void:
     _ok(state is Dictionary,"runtime state exists")
     if state is Dictionary:
         _ok(int(state.get("schema_version",0)) == 5,"runtime uses save schema v5")
-        _ok(str(state.get("version","")) == "godot-v4-circulation-puzzle-m4","runtime stamps V4 circulation metadata")
+        _ok(str(state.get("version","")) == "godot-v4-circulation-puzzle-m5","runtime stamps V4 M5 metadata")
         _ok(state.has("circulation_v4"),"runtime initializes circulation V4 state")
         var board: Dictionary = state.get("circulation_v4",{})
         _ok(int(board.get("board_version",0)) == 4,"runtime circulation board version is 4")
@@ -51,8 +51,6 @@ func _init() -> void:
     _ok(ambience != null,"ambient audio runtime initialized once")
     _ok(scene.get("content") != null,"current shell rendered")
 
-    # Hidden legacy tabs remain callable for rollback/regression even though the
-    # V4 proof navigation exposes only the satoyama and settings surfaces.
     for tab in ["farm","work","market","village"]:
         scene.call("_show_tab",tab)
         await process_frame
@@ -61,9 +59,11 @@ func _init() -> void:
     scene.call("_show_tab","farm")
     await process_frame
     var farm_map = scene.get("map")
-    _ok(farm_map != null and str(farm_map.get_script().resource_path).ends_with("circulation_board_v4.gd"),"farm runtime renders V4 ecological board")
+    _ok(farm_map != null and str(farm_map.get_script().resource_path).ends_with("circulation_board_v5.gd"),"farm runtime renders M5 ecological board")
+    if farm_map != null:
+        _ok(farm_map.has_method("set_chain_preview"),"runtime board exposes in-world chain preview")
 
-    print("B5 CURRENT RUNTIME V4 CONTRACT COMPLETE failures=",failures)
+    print("B5 CURRENT RUNTIME V4 M5 CONTRACT COMPLETE failures=",failures)
     scene.queue_free()
     await process_frame
     quit(1 if failures > 0 else 0)
