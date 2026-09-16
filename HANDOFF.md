@@ -1,293 +1,87 @@
-【アプリ名：Farm Loop】
+【アプリ名：Farm Loop / 雪里】
 
-# Farm Loop 開発引き継ぎ書 — Product Reset v4
+# Farm Loop 引き継ぎ書 — KILL / FROZEN
 
-更新日：2026-09-16 JST
+更新日：2026-09-17 JST
 
-この文書だけで次チャットから開発を再開できるようにする。実装判断では **GitHub `48wr9f4wgp-lab/farm-loop` の `main` 最新コードを最優先**する。プロジェクト全体では `ゲーム開発共通ルール_v1.7` / GAME_DEV_MASTER_RULES v1.7 をCanonical Ruleとして適用する。
+## 1. PRODUCTION_DECISION
 
----
+**KILL**
 
-## 1. 現在の判断
+Farm Loop / 雪里の現企画は制作継続を停止した。
 
-Farm Loopは継続。ただし、2026-09-16に旧Restore Loopを**ゲームとして弱い**と判断し、Core Loopを再設計した。
+これは一時保留ではなく、現在の企画・Core Loop・Vertical Sliceを前提としたProductionを継続しないという判断。
 
-Current decision:
+正本：
+- `docs/PRODUCTION_DECISION_KILL_2026_09_17.md`
 
-- Theme/IP: KEEP
-- 3D Diorama: KEEP
-- old CTA-driven Restore Loop: KILL
-- new Core Loop: ADOPT
+## 2. 開発状態
 
-新しい商品方向：
+新規機能追加・Visual polish・FTUE改善・External Alpha準備を停止する。
 
-> **雪国の里山を、限られた手数で手入れし、循環の連鎖を組み上げて蘇らせる Cozy Restoration Puzzle / Management Game。**
+旧V3 Restore Loop、V4 Circulation Puzzleのどちらにも戻らない。
 
-Canonical product docs:
+再開する場合は、ユーザーが新企画を明示採用したうえで、Context Lock / Core Loop / Success Definitionから新規にやり直す。
 
-- `docs/PRODUCT_RESET_V4_2026_09_16.md`
-- `docs/GDD_V4_CIRCULATION_PUZZLE.md`
-- `docs/VERTICAL_SLICE_4_CIRCULATION_PUZZLE.md`
+## 3. 保持するもの
 
-旧 `PRODUCT_RESET_V3` / `VERTICAL_SLICE_3_ALPHA_RC` / FTUE V3は履歴・rollback用。新規商品判断の正本には使わない。
+削除しない。
 
----
+- GitHub repository / commit history
+- Godot実装
+- 3D里山ジオラマ
+- Save / migration
+- Web Export / GitHub Pages pipeline
+- iPhone向けUI / Safe Area知見
+- procedural audio / haptic hooks
+- app icon / branding
+- V3 / V4 docs / tests
+- 企画失敗から得たLearning
 
-## 2. 新Core Loop
+これらは次企画の再利用候補だが、タイトル固有仕様を自動で横展開しない。
 
-各月3 Action Points。
+## 4. Frozen Baseline
 
-1. 里山の状態を見る
-2. Interventionを選ぶ
-3. 適用するZoneを選ぶ
-4. 直接効果＋予測ChainをPreview
-5. 1 AP消費してCommit
-6. 最大3回まで手入れ
-7. `今月を終える`
-8. 水→土→植物→虫/生き物などのChainが一斉解決
-9. Recovery / 景観 / Harvest opportunityが変化
-10. 次月の改善を考える
+KILL判断直前の最終確認済み実装HEAD：
 
-`今月を終える`は待ち時間ではなく**答え合わせボタン**。
+`d3277a65dc2436ecda797338cba4959f13e111d4`
 
----
+その時点で：
 
-## 3. Vertical Slice 4
+- Farm Loop V4 Core CI: SUCCESS
+- Farm Loop Mobile Web CI: SUCCESS
+- Web Export: SUCCESS
+- GitHub Pages deploy: SUCCESS
 
-Proof target:
+このHEADは完成品ではない。
+**KILL時点の復旧可能な最終実装状態**として扱う。
 
-> 新規プレイヤーが少なくとも2回意味のある選択をし、月送り後の生態連鎖を理解し、別の順番/手を試すために次月へ進みたくなる。
+KILL判断記録コミット以降はdocumentation-only。
 
-Initial Zones:
+## 5. Release状態
 
-- Sansai Patch
-- Stream Bank
-- Meadow Edge
-- Coop Yard
-- Forest Edge optional
+- External Alpha: 未開始
+- App Store申請: 未開始
+- 課金: 未開始
+- 外部Analytics SaaS: 未導入
+- RELEASE_APPROVAL: なし
 
-Initial Interventions:
+公開・申請・契約・費用・課金開始・データ破壊は行わない。
 
-- Compost
-- Restore Stream
-- Plant Flowering Shrub
-- Deadwood / Mushroom Log optional after proof
+## 6. 過去企画
 
-No visible square grid. Internallyは小さなGraphとして扱う。
+履歴としてのみ保持：
 
----
+- V3 Restore Loop
+- V4 Circulation Puzzle
+- Vertical Slice 3 / 4
+- FTUE V2 / V3
+- External Alpha readiness docs
 
-## 4. Success Definition
+これらは現在のActive Product Specではない。
 
-### Repeat
-毎月、限られた手数をどこへ使うか選び、相乗効果を組む。
+## 7. 次にFarm Loopを触る場合
 
-### Delight
-月末に自分の選択が複数の景観変化として連鎖する。
+ユーザーから明示的な再開指示がない限り、実装を続けない。
 
-### Progress
-里山のZoneが回復し、新しい生態関係と景観が開く。
-
-### Return
-次月/次季節に計画したChainがどう育つか見たい。
-
-### Revenue
-Premium base game + optional major-region expansion/DLC hypothesis. No forced ads/gacha/battle pass/FOMO.
-
-### Convention
-Touchで分かる、Previewが明快、Commit前は戻せる、短時間、低ストレス。
-
-### Differentiation
-日本の雪国里山 + 生態連鎖パズル + 月3手 + 3Dで見える再生。
-
----
-
-## 5. Market Check 2026-09-16
-
-Current adjacent references:
-
-- ISLANDERS: Mobile — minimalist mobile adjacency puzzle
-- Terra Nil — restoration itself as objective/reward
-- Preserve — ecosystem symbiosis as puzzle rule
-- Dorfromantik — calm placement strategy + board evolution
-- ISLANDERS: New Shores — small-rule 3D strategy / strong visual world-building
-
-1作品を模倣せず、抽象原理だけ採用する。
-
----
-
-## 6. Technology
-
-Keep Godot 4.7.2.
-
-Reason:
-- existing 3D diorama / input / save / Web/iPhone test pipeline is useful
-- new system is graph/state driven
-- engine migration does not solve the product problem
-
-New V4 architecture should be cleanly separated from V3 FTUE inheritance chains.
-
-Suggested modules:
-
-- `scripts/core/circulation_rules_v4.gd`
-- V4 board state helper
-- `scripts/ui/circulation_board_v4.gd`
-- `scripts/ui/screens/farm_screen_v4_puzzle.gd`
-- `tests/test_circulation_rules_v4.gd`
-- `tests/test_ftue_v4.gd`
-
-Do not dump V4 logic into `main_v30.gd` / `farm_diorama_v15.gd`.
-
----
-
-## 7. Current Runtime Before V4 Migration
-
-Current deployed implementation is still the old proof runtime:
-
-`main.tscn`
-→ `scripts/ui/main_v30.gd`
-→ `FarmScreenV15`
-→ `FarmDioramaV15`
-
-This runtime is functional but **not the adopted product Core Loop**.
-
-Keep it as a rollback/baseline while Vertical Slice 4 is built incrementally.
-
-Do not call the project Alpha-ready until V4 replaces the proof flow and passes physical-device testing.
-
----
-
-## 8. V4 Development Order
-
-1. Rules-only deterministic simulation
-2. Save / migration block `circulation_v4`
-3. World Zone selection
-4. Intervention tray
-5. Chain preview
-6. Month resolution
-7. FTUE V4 with two valid opening routes
-8. Game Feel / Audio / Haptic
-9. Regression
-10. Web Export / Pages
-11. Physical iPhone two-month proof
-
-No visual-only polishing detour before the new interaction loop works.
-
----
-
-## 9. FTUE V4 Principle
-
-Tutorial teaches by choice.
-
-Opening prompt:
-
-> **最初にどこから手を入れる？**
-
-At minimum allow two valid choices:
-
-- Compost -> Sansai
-- Restore Stream -> Stream
-
-Both orders must succeed and produce understandable but different outcomes.
-
-Player gets 3 AP, then advances the month. Month-end resolution must explain itself visually.
-
-FTUE ends at Month 2 start.
-
----
-
-## 10. Proof Metrics
-
-Directional targets:
-
-- first meaningful choice <= 45 sec median
-- >=80% understand `3 actions -> month end -> chain`
-- >=70% complete FTUE V4 without explanation
-- >=60% voluntarily start Month 2
-- >=50% try a different intervention/order in Month 2
-- blocker = 0%
-
-Qualitative failure signal:
-
-> `ただボタンを押しているだけ`
-
-If this remains common, redesign rules again instead of adding content.
-
----
-
-## 11. Scope Cut Until V4 Proof
-
-Do not expand:
-
-- market selling
-- village relationship system
-- mountain route system
-- large crafting
-- multiple currencies
-- facility catalog
-- hazards
-- collection depth
-- story volume
-- LiveOps
-- monetization implementation
-
-Legacy code may remain temporarily for rollback and dependency safety.
-
----
-
-## 12. Visual Direction
-
-Keep the current practical 3D target only as presentation baseline:
-
-- portrait
-- fixed orthographic 3D diorama
-- snow-country satoyama
-- clear water / soil / vegetation state
-- no visible grid
-- zone selection visible
-- world larger than instruction UI
-
-The next visual work must serve V4 gameplay readability, not decoration for its own sake.
-
----
-
-## 13. Save / Safety
-
-Do not destroy current save.
-
-New V4 state should be introduced as a separate block, e.g.:
-
-```text
-state["circulation_v4"] = {
-  board_version,
-  action_points,
-  zones,
-  unlocked_interventions,
-  last_resolution
-}
-```
-
-Legacy state remains until migration/regression is proven.
-
----
-
-## 14. External / Irreversible Boundary
-
-User explicit approval required before:
-
-- External Alpha invitations/distribution
-- App Store submission
-- monetization launch
-- external analytics transmission/service contract
-- paid services
-- public release expansion
-
-Current next action is internal Vertical Slice 4 implementation only.
-
----
-
-## 15. Next
-
-Start `M1 — Rules-Only Simulation` from `docs/VERTICAL_SLICE_4_CIRCULATION_PUZZLE.md`.
-
-Do not return to old FTUE visual polishing unless required to support the new puzzle.
+再開指示が出た場合も、まず「何を残すか」を決め、旧Core Loopの続きを自動再開しない。
