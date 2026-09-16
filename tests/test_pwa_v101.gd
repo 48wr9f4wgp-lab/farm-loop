@@ -9,6 +9,15 @@ func _ok(condition: bool, message: String) -> void:
         failures += 1
         printerr("FAIL: ",message)
 
+func _find_button(node: Node, target: String) -> Button:
+    if node is Button and target in str(node.text):
+        return node
+    for child in node.get_children():
+        var found := _find_button(child,target)
+        if found != null:
+            return found
+    return null
+
 func _init() -> void:
     _ok(str(ProjectSettings.get_setting("display/window/stretch/mode","")) == "canvas_items","PWA uses canvas_items stretch")
     _ok(str(ProjectSettings.get_setting("display/window/stretch/aspect","")) == "expand","PWA expands to tall/wide phones")
@@ -48,9 +57,26 @@ func _init() -> void:
         nav_ok = false
     _ok(nav_ok,"bottom navigation keeps iPhone-sized tap targets")
 
-    var action = scene.get("selected_action_button")
-    _ok(action is Button and action.custom_minimum_size.y >= 50.0,"farm primary action stays at least 50px")
+    # V4 intentionally has no global facility CTA before the player touches the
+    # world. Verify the contextual primary action instead.
+    var map_value = scene.get("map")
+    _ok(map_value is Control and map_value.custom_minimum_size.y >= 385.0,"farm map keeps product-scale visual area")
+    if map_value != null and map_value.get("camera") is Camera3D:
+        var camera: Camera3D = map_value.get("camera")
+        var tap := InputEventMouseButton.new()
+        tap.button_index = MOUSE_BUTTON_LEFT
+        tap.pressed = true
+        tap.position = camera.unproject_position(map_value.zone_world_position("stream") + Vector3(0,0.2,0))
+        map_value._gui_input(tap)
+        await process_frame
+        await process_frame
+        var contextual_action := _find_button(scene,"沢を整える")
+        _ok(contextual_action is Button and contextual_action.custom_minimum_size.y >= 48.0,"V4 contextual primary action keeps mobile touch size")
+    else:
+        _ok(false,"V4 board exposes a tappable 3D camera")
 
+    # Legacy row helpers remain readable because old save surfaces still exist
+    # for migration/rollback, even though they are hidden from V4 navigation.
     for task_name in ["収穫","山を探索","販売"]:
         var row = scene.call("_daily_row",task_name,0,2)
         _ok(row is HBoxContainer,"daily notebook row builds: %s" % task_name)
@@ -62,9 +88,7 @@ func _init() -> void:
         if row is Node:
             row.free()
 
-    var map_value = scene.get("map")
-    _ok(map_value is Control and map_value.custom_minimum_size.y >= 385.0,"farm map keeps product-scale visual area")
-
-    print("V1.0.2 IPHONE PWA TESTS COMPLETE failures=",failures)
+    print("V4 IPHONE PWA CONTRACT COMPLETE failures=",failures)
     scene.queue_free()
+    await process_frame
     quit(1 if failures > 0 else 0)
