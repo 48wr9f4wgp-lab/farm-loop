@@ -1,6 +1,8 @@
 class_name GameState
 extends RefCounted
 
+const CirculationStateV4Class = preload("res://scripts/core/circulation_state_v4.gd")
+
 static func create(data: GameData) -> Dictionary:
     var levels := {}
     for key in data.get_table("facilities"):
@@ -9,9 +11,9 @@ static func create(data: GameData) -> Dictionary:
     for key in data.get_table("products"):
         inventory[key] = 0
     inventory["leaves"] = 4
-    return {
-        "schema_version": 4,
-        "version": "godot-0.4.1-mobile",
+    var state := {
+        "schema_version": 5,
+        "version": "godot-v4-circulation-puzzle",
         "year": 1,
         "month": 4,
         "money": 85000,
@@ -39,8 +41,10 @@ static func create(data: GameData) -> Dictionary:
         "counters": {"harvest":0,"sales":0,"craft":0},
         "quests": [],
         "tutorial_step": 0,
-        "log": ["Farm Loop Godot移植版を開始。鶏舎から循環を始めよう。"],
+        "log": ["Farm Loop V4：里山に3回手を入れ、月末の連鎖をつくろう。"],
         "analytics": {"session_actions":0,"events":[]},
         "settings": {"sound":true,"haptics":true,"reduced_motion":false},
         "ui": {"selected_facility":"coop","last_tab":"farm"}
     }
+    state["circulation_v4"] = CirculationStateV4Class.create_for_legacy(state)
+    return state
