@@ -19,9 +19,6 @@ func _init(slot: String = "main") -> void:
     temp_path = "user://farm_loop_%s_save.tmp.json" % safe
 
 func _canonical_payload_text(payload: Dictionary) -> String:
-    # JSON round-trip normalizes values the same way they will be represented
-    # after loading from disk (notably JSON numeric types), while sort_keys=true
-    # keeps dictionary ordering deterministic for checksum purposes.
     var first_pass := JSON.stringify(payload, "", true, false)
     var normalized: Variant = JSON.parse_string(first_pass)
     if typeof(normalized) != TYPE_DICTIONARY:
@@ -107,15 +104,15 @@ func migrate(raw: Dictionary, defaults: Dictionary) -> Dictionary:
     if version < 4:
         out["analytics"] = raw.get("analytics", {"session_actions":0})
 
-    # V5 introduces the circulation puzzle as a parallel block. It never
-    # overwrites the legacy economy/facility state so existing players retain
-    # all prior progress while V4 gameplay can evolve independently.
+    # V5 introduces a parallel puzzle board. A pre-V5 save must seed this block
+    # from its actual calendar/weather, not from the application's fresh defaults.
+    if version < 5 and not raw.has("circulation_v4"):
+        out["circulation_v4"] = CirculationStateV4Class.create_for_legacy(out)
     CirculationStateV4Class.ensure_in_state(out)
     out["schema_version"] = SCHEMA_VERSION
 
     # Preserve the release metadata that actually produced the save. The active
-    # application layer may stamp its current release after a successful boot,
-    # but migration itself must never invent an unrelated historical version.
+    # application layer stamps the current release only after a successful boot.
     out["version"] = str(raw.get("version", defaults.get("version", "unknown")))
     return out
 
