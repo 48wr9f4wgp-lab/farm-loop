@@ -12,7 +12,6 @@ func _ok(condition: bool, message: String) -> void:
         printerr("FAIL: ",message)
 
 func _init() -> void:
-    # Keep the previous renderer contract isolated from the new gameplay layer.
     var diorama = DioramaClass.new()
     diorama.custom_minimum_size = Vector2(390,480)
     diorama.set_state("spring","晴れ",{"coop":true,"compost":true,"sansai":true,"bee":true,"mushroom":true},"sansai",false)
@@ -48,8 +47,6 @@ func _init() -> void:
     diorama.queue_free()
     await process_frame
 
-    # Current runtime must preserve the same visual target while replacing the
-    # old facility-CTA interaction with ecological zone selection.
     var packed := load("res://main.tscn") as PackedScene
     _ok(packed != null,"current V4 main scene loads")
     if packed == null:
@@ -77,13 +74,14 @@ func _init() -> void:
         _ok(season_rect.end.x <= viewport_width - 88.0,"season row keeps physical-edge reservation")
 
     var farm_map = scene.get("map")
-    _ok(farm_map != null and str(farm_map.get_script().resource_path).ends_with("circulation_board_v4.gd"),"current farm uses ecological board V4")
+    _ok(farm_map != null and str(farm_map.get_script().resource_path).ends_with("circulation_board_v5.gd"),"current farm uses ecological board M5")
     if farm_map != null:
         _ok(int(farm_map.get("visual_pass")) == 13,"V4 board retains visual pass 13")
         _ok(str(farm_map.get("visual_target_id")) == "satoyama-practical-final-2026-09-16-v1","V4 board retains canonical visual target")
         var v4_world = farm_map.get("world_root")
-        _ok(v4_world != null and v4_world.name == "CirculationBoardV4World","V4 board owns explicit interaction world identity")
+        _ok(v4_world != null and v4_world.name == "CirculationBoardV5World","M5 board owns explicit interaction world identity")
         _ok(v4_world != null and v4_world.get_node_or_null("V4SelectedZoneFocus") != null,"V4 board has zone focus treatment")
+        _ok(v4_world != null and v4_world.get_node_or_null("V4M5ChainPreviewMarker") != null,"M5 preview marker exists in 3D world")
         var v4_camera = farm_map.get("camera")
         if v4_camera is Camera3D:
             var zone_events: Array = []
@@ -96,7 +94,7 @@ func _init() -> void:
             _ok(zone_events.size() == 1 and str(zone_events[0]) == "sansai","V4 board maps portrait tap to sansai zone")
             _ok(str(farm_map.get("selected_zone")) == "sansai","V4 world keeps selected zone state")
 
-    print("3D VISUAL + V4 BOARD CONTRACT COMPLETE failures=",failures)
+    print("3D VISUAL + V4 M5 BOARD CONTRACT COMPLETE failures=",failures)
     scene.queue_free()
     await process_frame
     quit(1 if failures > 0 else 0)
