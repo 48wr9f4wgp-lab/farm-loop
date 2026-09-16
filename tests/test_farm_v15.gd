@@ -43,9 +43,19 @@ func _init() -> void:
         else:
             _ok(false,"farm exposes action feedback behavior")
 
-    var action = scene.get("selected_action_button")
-    _ok(action is Button and action.custom_minimum_size.y >= 50.0,"farm CTA remains thumb-sized")
+        # V4 has no persistent facility CTA. The primary action appears only after
+        # the player selects land in the 3D board.
+        if map_value.has_signal("zone_selected"):
+            map_value.emit_signal("zone_selected","stream")
+            await process_frame
+            await process_frame
+        elif scene.has_method("_on_zone_selected"):
+            scene.call("_on_zone_selected","stream")
+            await process_frame
 
-    print("FARM PRODUCT CONTRACT TESTS COMPLETE failures=",failures)
+    var action = scene.get("context_action_button")
+    _ok(action is Button and action.visible and action.custom_minimum_size.y >= 50.0,"V4 contextual farm action remains thumb-sized")
+
+    print("FARM PRODUCT V4 CONTRACT TESTS COMPLETE failures=",failures)
     scene.queue_free()
     quit(1 if failures > 0 else 0)
