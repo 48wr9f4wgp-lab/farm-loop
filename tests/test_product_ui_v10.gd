@@ -28,6 +28,15 @@ func _find_named(root_node: Node, target: String) -> Node:
             return found
     return null
 
+func _find_button(root_node: Node, target: String) -> Button:
+    if root_node is Button and target in str(root_node.text):
+        return root_node
+    for child in root_node.get_children():
+        var found := _find_button(child,target)
+        if found != null:
+            return found
+    return null
+
 func _init() -> void:
     var packed := load("res://main.tscn") as PackedScene
     _ok(packed != null,"current main scene loads")
@@ -61,7 +70,7 @@ func _init() -> void:
     _ok(map != null,"V4 ecological board exists")
     if map != null:
         _ok(float(map.custom_minimum_size.y) >= 430.0,"3D world remains the dominant hero")
-        _ok(str(map.get_script().resource_path).ends_with("circulation_board_v4.gd"),"current product UI is driven by zone selection")
+        _ok(str(map.get_script().resource_path).ends_with("circulation_board_v5.gd"),"current product UI is driven by M5 zone selection")
 
     var runtime_state: Dictionary = scene.get("state")
     _ok(runtime_state.has("circulation_v4"),"runtime uses circulation V4 state")
@@ -94,7 +103,17 @@ func _init() -> void:
         _ok(_has_text(scene,"沢を整える"),"selected stream exposes its valid intervention")
         _ok(not _has_text(scene,"堆肥を入れる"),"stream tray does not show unrelated intervention")
 
-    print("CURRENT PRODUCT UI V4 CONTRACT COMPLETE failures=",failures)
+        var stream_action := _find_button(scene,"沢を整える")
+        if stream_action != null:
+            stream_action.emit_signal("pressed")
+            await process_frame
+            await process_frame
+            var preview_map = scene.get("map")
+            _ok(_find_named(scene,"V4PreviewCard") != null,"intervention choice enters preview state before commit")
+            _ok(preview_map != null and int(preview_map.get("chain_preview_edge_count")) >= 2,"M5 preview draws multiple ecological connections in-world")
+            _ok(preview_map != null and int(preview_map.get("chain_preview_target_count")) >= 2,"M5 preview marks predicted receiving zones")
+
+    print("CURRENT PRODUCT UI V4 M5 CONTRACT COMPLETE failures=",failures)
     scene.queue_free()
     await process_frame
     quit(1 if failures > 0 else 0)
