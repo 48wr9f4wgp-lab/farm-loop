@@ -1,7 +1,8 @@
 class_name SaveService
 extends RefCounted
 
-const SCHEMA_VERSION := 4
+const CirculationStateV4Class = preload("res://scripts/core/circulation_state_v4.gd")
+const SCHEMA_VERSION := 5
 
 var save_path: String = "user://farm_loop_save.json"
 var backup_path: String = "user://farm_loop_save.backup.json"
@@ -65,7 +66,10 @@ func load_or_default(default_state: Dictionary) -> Dictionary:
     loaded = _read_envelope(backup_path)
     if not loaded.is_empty():
         return migrate(loaded, default_state)
-    return default_state.duplicate(true)
+    var fresh := default_state.duplicate(true)
+    CirculationStateV4Class.ensure_in_state(fresh)
+    fresh["schema_version"] = SCHEMA_VERSION
+    return fresh
 
 func save(payload: Dictionary) -> bool:
     var env := _envelope(payload)
@@ -102,7 +106,13 @@ func migrate(raw: Dictionary, defaults: Dictionary) -> Dictionary:
         out["discovered"] = raw.get("discovered", ["eggs","taranome","udo","kogomi","shiitake"])
     if version < 4:
         out["analytics"] = raw.get("analytics", {"session_actions":0})
+
+    # V5 introduces the circulation puzzle as a parallel block. It never
+    # overwrites the legacy economy/facility state so existing players retain
+    # all prior progress while V4 gameplay can evolve independently.
+    CirculationStateV4Class.ensure_in_state(out)
     out["schema_version"] = SCHEMA_VERSION
+
     # Preserve the release metadata that actually produced the save. The active
     # application layer may stamp its current release after a successful boot,
     # but migration itself must never invent an unrelated historical version.
