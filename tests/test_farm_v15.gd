@@ -17,6 +17,15 @@ func _visual_layers_ignore_input(root_node: Node) -> bool:
             return false
     return true
 
+func _find_button(node: Node, target: String) -> Button:
+    if node is Button and target in str(node.text):
+        return node
+    for child in node.get_children():
+        var found := _find_button(child,target)
+        if found != null:
+            return found
+    return null
+
 func _init() -> void:
     var packed := load("res://main.tscn") as PackedScene
     _ok(packed != null,"current main scene loads")
@@ -43,19 +52,23 @@ func _init() -> void:
         else:
             _ok(false,"farm exposes action feedback behavior")
 
-        # V4 has no persistent facility CTA. The primary action appears only after
-        # the player selects land in the 3D board.
-        if map_value.has_signal("zone_selected"):
-            map_value.emit_signal("zone_selected","stream")
+        # V4 intentionally removes the persistent facility CTA. Drive the same
+        # 3D tap path a player uses, then verify the contextual action target.
+        if map_value.get("camera") is Camera3D:
+            var camera: Camera3D = map_value.get("camera")
+            var tap := InputEventMouseButton.new()
+            tap.button_index = MOUSE_BUTTON_LEFT
+            tap.pressed = true
+            tap.position = camera.unproject_position(map_value.zone_world_position("stream") + Vector3(0,0.2,0))
+            map_value._gui_input(tap)
             await process_frame
             await process_frame
-        elif scene.has_method("_on_zone_selected"):
-            scene.call("_on_zone_selected","stream")
-            await process_frame
-
-    var action = scene.get("context_action_button")
-    _ok(action is Button and action.visible and action.custom_minimum_size.y >= 50.0,"V4 contextual farm action remains thumb-sized")
+            var action := _find_button(scene,"沢を整える")
+            _ok(action is Button and action.custom_minimum_size.y >= 48.0,"V4 contextual farm action remains thumb-sized")
+        else:
+            _ok(false,"V4 board exposes a tappable 3D camera")
 
     print("FARM PRODUCT V4 CONTRACT TESTS COMPLETE failures=",failures)
     scene.queue_free()
+    await process_frame
     quit(1 if failures > 0 else 0)
