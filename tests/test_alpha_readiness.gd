@@ -21,7 +21,7 @@ func _init() -> void:
     await process_frame
     await process_frame
 
-    _ok(str(scene.get_script().resource_path).ends_with("main_v31.gd"),"proof runtime is main_v31")
+    _ok(str(scene.get_script().resource_path).ends_with("main_v32.gd"),"proof runtime is main_v32")
     _ok(scene.has_method("_analytics_export_payload"),"local telemetry export remains available")
     _ok(scene.has_method("_record_session_end"),"runtime records session_end")
 
@@ -44,13 +44,14 @@ func _init() -> void:
     var farm_map = scene.get("map")
     _ok(farm_map != null,"V4 proof builds ecological board")
     if farm_map != null:
-        _ok(str(farm_map.get_script().resource_path).ends_with("circulation_board_v4.gd"),"V4 proof uses circulation board")
+        _ok(str(farm_map.get_script().resource_path).ends_with("circulation_board_v5.gd"),"V4 proof uses M5 circulation board")
         _ok(int(farm_map.get("visual_pass")) == 13,"V4 board reuses proven practical visual pass 13")
         _ok(str(farm_map.get("visual_target_id")) == "satoyama-practical-final-2026-09-16-v1","practical visual target remains baseline")
         var world_root = farm_map.get("world_root")
         _ok(world_root != null and world_root.get_node_or_null("PracticalFinalVisualTargetV15") != null,"V15 practical visual layer is retained")
-        _ok(world_root != null and world_root.get_node_or_null("CirculationBoardV4Marker") != null,"V4 board interaction layer is installed")
+        _ok(world_root != null and world_root.get_node_or_null("CirculationBoardV4Marker") != null,"V4 board interaction layer is retained")
         _ok(world_root != null and world_root.get_node_or_null("V4SelectedZoneFocus") != null,"V4 world-space zone focus exists")
+        _ok(world_root != null and world_root.get_node_or_null("V4M5ChainPreviewMarker") != null,"M5 chain preview layer is installed")
 
     scene.call("_record_session_end","contract_test")
     var has_session_end := false
@@ -60,7 +61,7 @@ func _init() -> void:
             break
     _ok(has_session_end,"session_end remains persisted into local telemetry")
 
-    print("V4 PROOF READINESS CONTRACT COMPLETE failures=",failures)
+    print("V4 M5 PROOF READINESS CONTRACT COMPLETE failures=",failures)
     scene.queue_free()
     await process_frame
     quit(1 if failures > 0 else 0)
