@@ -16,11 +16,45 @@ const ADJACENCY := {
     "coop": ["meadow"]
 }
 
-static func new_state() -> Dictionary:
+static func season_for_month(month: int) -> String:
+    if month in [3,4,5]:
+        return "spring"
+    if month in [6,7,8]:
+        return "summer"
+    if month in [9,10,11]:
+        return "autumn"
+    return "winter"
+
+static func season_name(season: String) -> String:
+    return {
+        "spring":"春",
+        "summer":"夏",
+        "autumn":"秋",
+        "winter":"冬"
+    }.get(season,"春")
+
+static func zone_name(zone_id: String) -> String:
+    return {
+        "sansai":"山菜区画",
+        "stream":"沢",
+        "meadow":"草地",
+        "coop":"鶏舎まわり"
+    }.get(zone_id,"里山")
+
+static func intervention_name(intervention: String) -> String:
+    return {
+        INTERVENTION_COMPOST:"堆肥を入れる",
+        INTERVENTION_RESTORE_STREAM:"沢を整える",
+        INTERVENTION_FLOWERING_SHRUB:"花木を植える"
+    }.get(intervention,"手入れする")
+
+static func new_state(year: int = 1, month: int = 4, weather: String = "晴れ") -> Dictionary:
     return {
         "board_version": 4,
-        "year": 1,
-        "month": 4,
+        "year": maxi(1,year),
+        "month": clampi(month,1,12),
+        "season": season_for_month(clampi(month,1,12)),
+        "weather": weather if not weather.is_empty() else "晴れ",
         "action_points": MAX_ACTION_POINTS,
         "zones": {
             "sansai": _zone(),
@@ -65,6 +99,13 @@ static func valid_targets(state: Dictionary, intervention: String) -> Array:
             return ["meadow"]
         _:
             return []
+
+static func available_interventions(state: Dictionary, target_zone: String) -> Array:
+    var result: Array = []
+    for intervention in state.get("unlocked_interventions",[]):
+        if valid_targets(state,str(intervention)).has(target_zone):
+            result.append(str(intervention))
+    return result
 
 static func can_commit(state: Dictionary, intervention: String, target_zone: String) -> bool:
     if int(state.get("action_points",0)) <= 0:
@@ -219,6 +260,7 @@ static func resolve_month(state: Dictionary, advance_calendar: bool = true) -> D
             next_year += 1
         result["month"] = next_month
         result["year"] = next_year
+        result["season"] = season_for_month(next_month)
 
     return {
         "state":result,
