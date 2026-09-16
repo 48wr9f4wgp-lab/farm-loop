@@ -21,7 +21,7 @@ func _init() -> void:
     await process_frame
     await process_frame
 
-    _ok(str(scene.get_script().resource_path).ends_with("main_v29.gd"),"alpha candidate runtime is main_v29")
+    _ok(str(scene.get_script().resource_path).ends_with("main_v30.gd"),"alpha candidate runtime is main_v30")
     _ok(scene.has_method("_analytics_export_payload"),"runtime exposes local telemetry export payload")
     _ok(scene.has_method("_record_session_end"),"runtime records session_end")
     _ok(scene.has_method("_on_request"),"runtime owns village request completion hook")
@@ -49,8 +49,12 @@ func _init() -> void:
     var farm_map = scene.get("map")
     _ok(farm_map != null,"alpha candidate builds farm hero")
     if farm_map != null:
-        _ok(str(farm_map.get_script().resource_path).ends_with("farm_diorama_v14.gd"),"alpha candidate uses V14 diorama")
-        _ok(int(farm_map.get("visual_pass")) == 12,"alpha candidate is on visual pass 12")
+        _ok(str(farm_map.get_script().resource_path).ends_with("farm_diorama_v15.gd"),"alpha candidate uses practical final-target diorama v15")
+        _ok(int(farm_map.get("visual_pass")) == 13,"alpha candidate is on visual pass 13")
+        _ok(str(farm_map.get("visual_target_id")) == "satoyama-practical-final-2026-09-16-v1","practical visual target is canonical")
+        var world_root = farm_map.get("world_root")
+        _ok(world_root != null and world_root.get_node_or_null("PracticalFinalVisualTargetV15") != null,"practical final visual marker is installed")
+        _ok(world_root != null and world_root.get_node_or_null("PracticalLandscapeLayerV15") != null,"practical landscape layer is installed")
 
     scene.call("_record_session_end","contract_test")
     var state: Dictionary = scene.get("state")
@@ -61,7 +65,7 @@ func _init() -> void:
             break
     _ok(has_session_end,"session_end is persisted into local telemetry")
 
-    print("EXTERNAL ALPHA READINESS CONTRACT COMPLETE failures=",failures)
+    print("EXTERNAL ALPHA PRACTICAL VISUAL CONTRACT COMPLETE failures=",failures)
     scene.queue_free()
     await process_frame
     quit(1 if failures > 0 else 0)
